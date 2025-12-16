@@ -1,8 +1,8 @@
 set -euo pipefail
 
-REPO="verseles/run"
+REPO="princepal9120/devrunner"
 INSTALL_DIR="${HOME}/.local/bin"
-BINARY_NAME="run"
+BINARY_NAME="devrunner"
 
 # Colors
 RED='\033[0;31m'
@@ -90,12 +90,25 @@ get_latest_version() {
 
 # Download and verify binary
 download_binary() {
-    local asset_name="run-${PLATFORM}"
+    # Try devrunner- first, then run-
+    local asset_base="devrunner-${PLATFORM}"
+    local asset_legacy="run-${PLATFORM}"
+    
     if [ "$OS" = "windows" ]; then
-        asset_name="${asset_name}.exe"
+        asset_base="${asset_base}.exe"
+        asset_legacy="${asset_legacy}.exe"
     fi
 
-    local download_url="https://github.com/${REPO}/releases/download/${LATEST_VERSION}/${asset_name}"
+    local download_url="https://github.com/${REPO}/releases/download/${LATEST_VERSION}/${asset_base}"
+    local asset_name="${asset_base}"
+
+    # Check if devrunner asset exists (using curl -I for HEAD request)
+    # If it fails, fallback to legacy name
+    if ! curl -sI "$download_url" > /dev/null; then
+        asset_name="${asset_legacy}"
+        download_url="https://github.com/${REPO}/releases/download/${LATEST_VERSION}/${asset_name}"
+    fi
+
     local checksum_url="${download_url}.sha256"
 
     print_info "Downloading ${asset_name}..."
@@ -179,7 +192,7 @@ check_path() {
 
 main() {
     echo ""
-    echo "  🚀 run - Universal Task Runner Installer"
+    echo "  🚀 devrunner - Universal Task Runner Installer"
     echo "  ==========================================="
     echo ""
 
@@ -190,7 +203,7 @@ main() {
 
     print_success "Installation complete!"
     echo ""
-    echo "  Run 'run --help' to get started"
+    echo "  Run 'devrunner --help' to get started"
     echo ""
 }
 

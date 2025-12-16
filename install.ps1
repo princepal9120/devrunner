@@ -1,8 +1,8 @@
 
 $ErrorActionPreference = "Stop"
 
-$Repo = "verseles/run"
-$BinaryName = "run.exe"
+$Repo = "princepal9120/devrunner"
+$BinaryName = "devrunner.exe"
 $InstallDir = "$env:USERPROFILE\.local\bin"
 
 function Write-Info { param($Message) Write-Host "🔍 $Message" -ForegroundColor Cyan }
@@ -22,13 +22,13 @@ function Get-Architecture {
 function Get-LatestVersion {
     Write-Info "Fetching latest version..."
     $releaseUrl = "https://api.github.com/repos/$Repo/releases/latest"
-    $release = Invoke-RestMethod -Uri $releaseUrl -Headers @{ "User-Agent" = "run-installer" }
+    $release = Invoke-RestMethod -Uri $releaseUrl -Headers @{ "User-Agent" = "devrunner-installer" }
     return $release.tag_name
 }
 
-function Install-Run {
+function Install-Devrunner {
     Write-Host ""
-    Write-Host "  🚀 run - Universal Task Runner Installer" -ForegroundColor Magenta
+    Write-Host "  🚀 devrunner - Universal Task Runner Installer" -ForegroundColor Magenta
     Write-Host "  ===========================================" -ForegroundColor Magenta
     Write-Host ""
 
@@ -41,18 +41,30 @@ function Install-Run {
     Write-Info "Latest version: $version"
 
     # Build asset name and URL
-    $assetName = "run-windows-$arch.exe"
-    $downloadUrl = "https://github.com/$Repo/releases/download/$version/$assetName"
+    # Try devrunner first, then run
+    $assetBase = "devrunner-windows-$arch.exe"
+    $assetLegacy = "run-windows-$arch.exe"
+    $downloadUrl = "https://github.com/$Repo/releases/download/$version/$assetBase"
     $checksumUrl = "$downloadUrl.sha256"
 
+    # Check if devrunner asset exists
+    try {
+        $req = Invoke-WebRequest -Uri $downloadUrl -Method Head -ErrorAction Stop
+    } catch {
+        # Fallback
+        $assetBase = $assetLegacy
+        $downloadUrl = "https://github.com/$Repo/releases/download/$version/$assetBase"
+        $checksumUrl = "$downloadUrl.sha256"
+    }
+
     # Create temp directory
-    $tempDir = New-Item -ItemType Directory -Path (Join-Path $env:TEMP "run-install-$(Get-Random)")
+    $tempDir = New-Item -ItemType Directory -Path (Join-Path $env:TEMP "devrunner-install-$(Get-Random)")
     $tempBinary = Join-Path $tempDir $BinaryName
-    $tempChecksum = Join-Path $tempDir "$assetName.sha256"
+    $tempChecksum = Join-Path $tempDir "$assetBase.sha256"
 
     try {
         # Download binary
-        Write-Info "Downloading $assetName..."
+        Write-Info "Downloading $assetBase..."
         Invoke-WebRequest -Uri $downloadUrl -OutFile $tempBinary -UseBasicParsing
 
         # Download and verify checksum
@@ -109,7 +121,7 @@ function Install-Run {
         Write-Host ""
         Write-Success "Installation complete!"
         Write-Host ""
-        Write-Host "  Run 'run --help' to get started" -ForegroundColor Cyan
+        Write-Host "  Run 'devrunner --help' to get started" -ForegroundColor Cyan
         Write-Host ""
 
     } finally {
@@ -118,5 +130,5 @@ function Install-Run {
     }
 }
 
-# Run installer
-Install-Run
+# Devrunner installer
+Install-Devrunner
