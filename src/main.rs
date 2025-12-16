@@ -1,5 +1,3 @@
-
-
 use clap::{CommandFactory, Parser};
 use clap_complete::generate;
 use devrunner::cli::{Cli, Commands};

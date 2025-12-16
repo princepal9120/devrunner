@@ -1,5 +1,3 @@
-
-
 use super::{DetectedRunner, Ecosystem};
 use std::path::Path;
 

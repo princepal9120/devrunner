@@ -6,7 +6,7 @@ use std::fs::{self, File};
 use tempfile::tempdir;
 
 fn run_cmd() -> Command {
-    Command::cargo_bin("run").unwrap()
+    Command::cargo_bin("devrunner").unwrap()
 }
 
 #[test]
@@ -209,7 +209,7 @@ fn test_completions_bash() {
         .args(["completions", "bash"])
         .assert()
         .success()
-        .stdout(predicate::str::contains("_run"));
+        .stdout(predicate::str::contains("_devrunner"));
 }
 
 #[test]
@@ -218,7 +218,7 @@ fn test_completions_zsh() {
         .args(["completions", "zsh"])
         .assert()
         .success()
-        .stdout(predicate::str::contains("#compdef run"));
+        .stdout(predicate::str::contains("#compdef devrunner"));
 }
 
 #[test]

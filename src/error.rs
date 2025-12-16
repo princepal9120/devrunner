@@ -1,5 +1,3 @@
-
-
 use thiserror::Error;
 
 /// Exit codes for the CLI

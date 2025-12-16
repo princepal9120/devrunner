@@ -1,5 +1,3 @@
-
-
 use crate::config::Config;
 use crate::output;
 use chrono::{DateTime, Duration, Utc};

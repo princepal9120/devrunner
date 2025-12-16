@@ -1,5 +1,3 @@
-
-
 use crate::detectors::{detect_all, is_tool_installed, DetectedRunner, Ecosystem};
 use crate::error::RunError;
 use crate::output;

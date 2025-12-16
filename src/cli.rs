@@ -1,4 +1,3 @@
-
 use clap::{Parser, Subcommand};
 
 /// Universal task runner - automatically detects and runs project commands

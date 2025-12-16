@@ -1,5 +1,3 @@
-
-
 use owo_colors::OwoColorize;
 use std::env;
 
