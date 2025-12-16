@@ -3,8 +3,8 @@ use clap::{Parser, Subcommand};
 
 /// Universal task runner - automatically detects and runs project commands
 #[derive(Parser, Debug, Clone)]
-#[command(name = "run")]
-#[command(author = "Verseles")]
+#[command(name = "devrunner")]
+#[command(author = "PrincePal")]
 #[command(version)]
 #[command(about = "Universal task runner for modern development", long_about = None)]
 #[command(after_help = "SUPPORTED RUNNERS:
@@ -22,11 +22,11 @@ use clap::{Parser, Subcommand};
   Generic:  make
 
 EXAMPLES:
-  run test                      # Run test command using detected runner
-  run build -- --verbose        # Pass extra arguments after --
-  run lint --levels=5           # Search up to 5 levels above current dir
-  run start --ignore=npm,yarn   # Skip specific runners
-  run deploy --dry-run          # Show command without executing")]
+  devrunner test                      # Run test command using detected runner
+  devrunner build -- --verbose        # Pass extra arguments after --
+  devrunner lint --levels=5           # Search up to 5 levels above current dir
+  devrunner start --ignore=npm,yarn   # Skip specific runners
+  devrunner deploy --dry-run          # Show command without executing")]
 pub struct Cli {
     /// Command to run (e.g., test, build, start)
     #[arg(value_name = "COMMAND")]
@@ -93,28 +93,28 @@ mod tests {
 
     #[test]
     fn test_basic_command() {
-        let cli = Cli::parse_from(["run", "test"]);
+        let cli = Cli::parse_from(["devrunner", "test"]);
         assert_eq!(cli.command, Some("test".to_string()));
         assert!(cli.args.is_empty());
     }
 
     #[test]
     fn test_command_with_args() {
-        let cli = Cli::parse_from(["run", "test", "--", "--coverage", "--verbose"]);
+        let cli = Cli::parse_from(["devrunner", "test", "--", "--coverage", "--verbose"]);
         assert_eq!(cli.command, Some("test".to_string()));
         assert_eq!(cli.args, vec!["--coverage", "--verbose"]);
     }
 
     #[test]
     fn test_ignore_single() {
-        let cli = Cli::parse_from(["run", "test", "--ignore", "npm"]);
+        let cli = Cli::parse_from(["devrunner", "test", "--ignore", "npm"]);
         assert!(cli.should_ignore("npm"));
         assert!(!cli.should_ignore("yarn"));
     }
 
     #[test]
     fn test_ignore_comma_separated() {
-        let cli = Cli::parse_from(["run", "test", "--ignore=npm,yarn"]);
+        let cli = Cli::parse_from(["devrunner", "test", "--ignore=npm,yarn"]);
         assert!(cli.should_ignore("npm"));
         assert!(cli.should_ignore("yarn"));
         assert!(!cli.should_ignore("pnpm"));
@@ -122,37 +122,37 @@ mod tests {
 
     #[test]
     fn test_ignore_multiple_flags() {
-        let cli = Cli::parse_from(["run", "test", "--ignore", "npm", "--ignore", "yarn"]);
+        let cli = Cli::parse_from(["devrunner", "test", "--ignore", "npm", "--ignore", "yarn"]);
         assert!(cli.should_ignore("npm"));
         assert!(cli.should_ignore("yarn"));
     }
 
     #[test]
     fn test_levels() {
-        let cli = Cli::parse_from(["run", "test", "--levels=5"]);
+        let cli = Cli::parse_from(["devrunner", "test", "--levels=5"]);
         assert_eq!(cli.levels, 5);
     }
 
     #[test]
     fn test_default_levels() {
-        let cli = Cli::parse_from(["run", "test"]);
+        let cli = Cli::parse_from(["devrunner", "test"]);
         assert_eq!(cli.levels, 3);
     }
 
     #[test]
     fn test_verbose_and_quiet() {
-        let cli = Cli::parse_from(["run", "test", "-v"]);
+        let cli = Cli::parse_from(["devrunner", "test", "-v"]);
         assert!(cli.verbose);
         assert!(!cli.quiet);
 
-        let cli = Cli::parse_from(["run", "test", "-q"]);
+        let cli = Cli::parse_from(["devrunner", "test", "-q"]);
         assert!(!cli.verbose);
         assert!(cli.quiet);
     }
 
     #[test]
     fn test_dry_run() {
-        let cli = Cli::parse_from(["run", "test", "--dry-run"]);
+        let cli = Cli::parse_from(["devrunner", "test", "--dry-run"]);
         assert!(cli.dry_run);
     }
 }

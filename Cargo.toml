@@ -1,19 +1,19 @@
 [package]
-name = "run-cli"
+name = "devrunner"
 version = "0.1.0"
 edition = "2021"
-authors = ["Verseles"]
+authors = ["PrincePal"]
 description = "Universal task runner for modern development - automatically detects and runs project commands"
-documentation = "https://github.com/verseles/run"
-homepage = "https://github.com/verseles/run"
-repository = "https://github.com/verseles/run"
+documentation = "https://github.com/princepal9120/devrunner"
+homepage = "https://github.com/princepal9120/devrunner"
+repository = "https://github.com/princepal9120/devrunner"
 readme = "README.md"
 license = "AGPL-3.0"
 keywords = ["cli", "task-runner", "npm", "yarn", "pnpm", "cargo", "make"]
 categories = ["command-line-utilities", "development-tools"]
 
 [[bin]]
-name = "run"
+name = "devrunner"
 path = "src/main.rs"
 
 [dependencies]

@@ -76,9 +76,8 @@ detect_platform() {
 get_latest_version() {
     print_info "Fetching latest version..."
 
-    LATEST_VERSION=$(curl -sL "https://api.github.com/repos/${REPO}/releases/latest" | \
-        grep '"tag_name"' | \
-        sed -E 's/.*"tag_name": *"([^"]+)".*/\1/')
+    local response=$(curl -sL "https://api.github.com/repos/${REPO}/releases/latest")
+    LATEST_VERSION=$(echo "$response" | grep '"tag_name"' | sed -E 's/.*"tag_name": *"([^"]+)".*/\1/' || true)
 
     if [ -z "$LATEST_VERSION" ]; then
         print_error "Failed to fetch latest version"
