@@ -1,0 +1,168 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Documentation - devrunner</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link
+        href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap"
+        rel="stylesheet">
+    <link rel="stylesheet" href="style.css">
+    <script src="https://unpkg.com/lucide@latest"></script>
+</head>
+
+<body>
+
+    <div class="docs-layout">
+        <!-- Sidebar -->
+        <aside class="docs-sidebar">
+            <div class="logo"
+                style="margin-bottom: 2rem; display: flex; justify-content: space-between; align-items: center;">
+                <a href="index.html"
+                    style="display: flex; gap: 10px; align-items: center; color: var(--color-text-main); text-decoration: none;">
+                    <img src="logo.svg" alt="Logo" width="28" height="28" style="border-radius: 5px;">
+                    <span style="font-weight: 700; font-size: 1.1rem;">devrunner</span>
+                </a>
+                <button class="theme-toggle" onclick="toggleTheme()" aria-label="Toggle Theme"
+                    style="margin: 0; width: 32px; height: 32px;">
+                    <i data-lucide="moon" width="16" height="16" class="moon-icon"></i>
+                    <i data-lucide="sun" width="16" height="16" class="sun-icon" style="display:none"></i>
+                </button>
+                <!-- Mobile Sidebar Toggle -->
+                <button class="mobile-menu-btn" onclick="toggleMobileMenu()" aria-label="Toggle Menu"
+                    style="margin-left: 1rem; width: 32px; height: 32px; align-items: center; justify-content: center; border: 1px solid var(--color-border); border-radius: 8px;">
+                    <i data-lucide="menu" width="16" height="16"></i>
+                </button>
+            </div>
+
+            <nav>
+                <div class="docs-nav-group">
+                    <div class="docs-nav-title">Getting Started</div>
+                    <a href="#introduction" class="docs-nav-item active">Introduction</a>
+                    <a href="#installation" class="docs-nav-item">Installation</a>
+                    <a href="#usage" class="docs-nav-item">Usage</a>
+                </div>
+
+                <div class="docs-nav-group">
+                    <div class="docs-nav-title">Guides</div>
+                    <a href="#supported-tools" class="docs-nav-item">Supported Tools</a>
+                    <a href="#configuration" class="docs-nav-item">Configuration</a>
+                    <a href="#troubleshooting" class="docs-nav-item">Troubleshooting</a>
+                </div>
+            </nav>
+        </aside>
+
+        <!-- Content -->
+        <main class="docs-content">
+            <article class="docs-article">
+
+                <header class="docs-header">
+                    <h1>Documentation</h1>
+                    <p class="hero-subtitle" style="margin: 0; text-align: left;">Everything you need to set up and
+                        customize devrunner.</p>
+                </header>
+
+                <section id="introduction">
+                    <h2>Introduction</h2>
+                    <p><strong>devrunner</strong> is a universal task runner designed to eliminate the mental context
+                        switching between different project environments. It serves as a unified interface for your
+                        build tools.</p>
+                    <p>Instead of remembering <code>npm run build</code>, <code>mvn package</code>, or
+                        <code>cargo build</code>, you simply run <code>devrunner build</code>. The tool automatically
+                        detects the project type and invokes the correct command.
+                    </p>
+                </section>
+
+                <section id="installation">
+                    <h2>Installation</h2>
+                    <p>Install devrunner on your local machine. It comes as a single binary with zero dependencies.</p>
+
+                    <div class="install-widget">
+                        <div class="install-tabs">
+                            <div class="install-tab active" onclick="switchTab('mac', this)">macOS / Linux</div>
+                            <div class="install-tab" onclick="switchTab('win', this)">Windows</div>
+                            <div class="install-tab" onclick="switchTab('cargo', this)">Rust</div>
+                        </div>
+                        <div class="install-code">
+                            <span id="cmd-text">curl -fsSL
+                                https://raw.githubusercontent.com/princepal9120/devrunner/main/install.sh | bash</span>
+                            <i data-lucide="copy" class="copy-icon" onclick="copyCode()"></i>
+                        </div>
+                    </div>
+                </section>
+
+                <section id="usage">
+                    <h2>Usage</h2>
+                    <p>The standard syntax is:</p>
+                    <pre><code>devrunner [command] [args...]</code></pre>
+
+                    <h3>Basic Workflow</h3>
+                    <p>Navigate to any project directory (or subdirectory) and run commands:</p>
+
+                    <pre><code># Run your test suite
+$ devrunner test
+
+# Start development server
+$ devrunner start
+
+# Lint codebase
+$ devrunner lint</code></pre>
+
+                    <h3>Passing Arguments</h3>
+                    <p>To pass flags directly to the underlying tool, use the <code>--</code> separator:</p>
+                    <pre><code># Equivalent to "npm run test -- --watch"
+$ devrunner test -- --watch</code></pre>
+                </section>
+
+                <section id="configuration">
+                    <h2>Configuration</h2>
+                    <p>Global configuration is stored in <code>~/.config/devrunner/config.toml</code>.</p>
+                    <pre><code class="language-toml"># ~/.config/devrunner/config.toml
+
+[config]
+# Automatically check for updates (default: true)
+auto_update = true
+
+# Skip detection for specific tools
+ignore_tools = ["make"]
+
+# Enable detailed logging
+verbose = false</code></pre>
+                </section>
+
+            </article>
+
+            <footer class="footer" style="border-top: none; margin-top: 2rem; padding: 2rem 0; text-align: left;">
+                <p>© 2025 devrunner. <a href="https://github.com/princepal9120/devrunner"
+                        style="text-decoration: underline;">Edit this page on GitHub</a>.</p>
+            </footer>
+        </main>
+    </div>
+
+    <script src="main.js"></script>
+    <script>
+        lucide.createIcons();
+
+        const commands = {
+            mac: 'curl -fsSL https://raw.githubusercontent.com/princepal9120/devrunner/main/install.sh | bash',
+            win: 'irm https://raw.githubusercontent.com/princepal9120/devrunner/main/install.ps1 | iex',
+            cargo: 'cargo install devrunner'
+        };
+
+        function switchTab(os, el) {
+            document.querySelectorAll('.install-tab').forEach(t => t.classList.remove('active'));
+            el.classList.add('active');
+            document.getElementById('cmd-text').innerText = commands[os];
+        }
+
+        function copyCode() {
+            navigator.clipboard.writeText(document.getElementById('cmd-text').innerText);
+            alert('Copied to clipboard!');
+        }
+    </script>
+</body>
+
+</html>

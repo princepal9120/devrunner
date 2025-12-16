@@ -1,0 +1,264 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="theme-color" content="#1E1E1E">
+    <link rel="icon" href="logo.svg" type="image/svg+xml">
+    <title>devrunner - Universal Task Runner</title>
+    <meta name="description" content="Universal task runner for modern development.">
+    <!-- Fonts: Inter & JetBrains Mono -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link
+        href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap"
+        rel="stylesheet">
+    <link rel="stylesheet" href="style.css">
+    <script src="https://unpkg.com/lucide@latest"></script>
+</head>
+
+<body>
+
+    <!-- Navigation -->
+    <nav class="navbar">
+        <div style="display: flex; align-items: center; gap: 1rem;">
+            <!-- Logo -->
+            <a href="#" class="logo">
+                <img src="logo.svg" alt="Logo" width="32" height="32" style="border-radius: 6px;">
+                <span style="font-weight: 700; font-size: 1.2rem; letter-spacing: -0.02em;">devrunner</span>
+            </a>
+        </div>
+
+        <button class="mobile-menu-btn" onclick="toggleMobileMenu()" aria-label="Toggle Menu">
+            <i data-lucide="menu"></i>
+        </button>
+        <div class="nav-links">
+            <a href="docs.html" class="nav-link">Documentation</a>
+            <a href="https://github.com/princepal9120/devrunner" class="nav-link github">
+                <i data-lucide="github" width="18" height="18"></i> GitHub
+            </a>
+        </div>
+    </nav>
+
+    <!-- Hero Section -->
+    <header class="hero-section">
+        <div class="badge">
+            <i data-lucide="sparkles" width="14" height="14" style="margin-right:6px"></i>
+            New: v0.2.0 Release
+        </div>
+        <h1 class="hero-title">Your development workflow,<br>automated.</h1>
+        <p class="hero-subtitle">
+            Stop remembering if it's <code>npm run</code>, <code>cargo run</code>, or <code>mvn exec</code>.
+            <strong>devrunner</strong> detects your project tools and runs the right commands instantly.
+        </p>
+
+        <div class="hero-cta">
+            <a href="docs.html" class="btn btn-primary">Get Started</a>
+            <a href="https://github.com/princepal9120/devrunner" class="btn btn-secondary">View Source</a>
+        </div>
+
+        <!-- Terminal Preview -->
+        <div class="demo-terminal">
+            <div class="terminal-header">
+                <div class="dot red"></div>
+                <div class="dot yellow"></div>
+                <div class="dot green"></div>
+            </div>
+            <div class="terminal-body">
+                <div><span class="prompt">$</span><span class="cmd">cd my-react-project</span></div>
+                <div><span class="prompt">$</span><span class="cmd">devrunner start</span></div>
+                <div style="margin-top: 8px">
+                    <div class="output-success">✔ Detected Node.js (package.json)</div>
+                    <div class="output">ℹ Running: npm run start</div>
+                </div>
+                <div style="margin-top: 12px; color: #E5E7EB">
+                    > react-scripts start<br>
+                    Starting the development server...<br>
+                    Compiled successfully!
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <!-- Features -->
+    <section class="features-section">
+        <div class="container">
+            <div class="grid-3">
+                <div class="feature-card">
+                    <div class="feature-icon"><i data-lucide="cpu"></i></div>
+                    <h3>Smart Detection</h3>
+                    <p>Automatically identifies 20+ build tools including Node.js, Rust, Python, Go, and Java. No
+                        configuration needed.</p>
+                </div>
+                <div class="feature-card">
+                    <div class="feature-icon"><i data-lucide="zap"></i></div>
+                    <h3>Blazing Fast</h3>
+                    <p>Written in Rust with zero runtime overhead. Cold start times under 50ms, making it faster than
+                        native runners.</p>
+                </div>
+                <div class="feature-card">
+                    <div class="feature-icon"><i data-lucide="folder-tree"></i></div>
+                    <h3>Recursive Power</h3>
+                    <p>Run commands from any deep subdirectory. We traverse up to find the project root so you don't
+                        have to.</p>
+                </div>
+            </div>
+        </div>
+    </section>
+    <!-- Supported Ecosystems - New Section -->
+    <section class="ecosystem-section" style="padding: 6rem 0; border-bottom: 1px solid var(--color-border);">
+        <div class="container" style="text-align: center;">
+            <div class="badge"
+                style="background: var(--color-bg-alt); color: var(--color-text-secondary); border-color: var(--color-border);">
+                ecosystem
+            </div>
+            <h2 style="font-size: 2.25rem; margin-top: 1rem; margin-bottom: 1rem;">One runner for every stack.</h2>
+            <p style="font-size: 1.1rem; color: var(--color-text-secondary); max-width: 600px; margin: 0 auto 4rem;">
+                Whether you're writing simple scripts or managing complex monorepos, Devrunner adapts to your
+                environment.
+            </p>
+
+            <div class="marquee-wrapper">
+                <div class="marquee-content">
+                    <!-- Set 1 -->
+                    <div class="logo-card mini">
+                        <img src="https://cdn.jsdelivr.net/gh/devicons/devicon/icons/javascript/javascript-original.svg"
+                            alt="JS" width="32">
+                        <span>JavaScript</span>
+                    </div>
+                    <div class="logo-card mini">
+                        <img src="https://cdn.jsdelivr.net/gh/devicons/devicon/icons/typescript/typescript-original.svg"
+                            alt="TS" width="32">
+                        <span>TypeScript</span>
+                    </div>
+                    <div class="logo-card mini">
+                        <img src="https://cdn.jsdelivr.net/gh/devicons/devicon/icons/python/python-original.svg"
+                            alt="Python" width="32">
+                        <span>Python</span>
+                    </div>
+                    <div class="logo-card mini">
+                        <img src="https://cdn.jsdelivr.net/gh/devicons/devicon/icons/rust/rust-original.svg" alt="Rust"
+                            width="32">
+                        <span>Rust</span>
+                    </div>
+                    <div class="logo-card mini">
+                        <img src="https://cdn.jsdelivr.net/gh/devicons/devicon/icons/go/go-original.svg" alt="Go"
+                            width="32">
+                        <span>Go</span>
+                    </div>
+                    <div class="logo-card mini">
+                        <img src="https://cdn.jsdelivr.net/gh/devicons/devicon/icons/java/java-original.svg" alt="Java"
+                            width="32">
+                        <span>Java</span>
+                    </div>
+                    <div class="logo-card mini">
+                        <img src="https://cdn.jsdelivr.net/gh/devicons/devicon/icons/php/php-original.svg" alt="PHP"
+                            width="32">
+                        <span>PHP</span>
+                    </div>
+                    <div class="logo-card mini">
+                        <img src="https://cdn.jsdelivr.net/gh/devicons/devicon/icons/ruby/ruby-original.svg" alt="Ruby"
+                            width="32">
+                        <span>Ruby</span>
+                    </div>
+                    <div class="logo-card mini">
+                        <img src="https://cdn.jsdelivr.net/gh/devicons/devicon/icons/csharp/csharp-original.svg"
+                            alt="C#" width="32">
+                        <span>.NET</span>
+                    </div>
+                    <div class="logo-card mini">
+                        <img src="https://cdn.jsdelivr.net/gh/devicons/devicon/icons/zig/zig-original.svg" alt="Zig"
+                            width="32">
+                        <span>Zig</span>
+                    </div>
+
+                    <!-- Set 2 (Duplicate for smooth scroll) -->
+                    <div class="logo-card mini">
+                        <img src="https://cdn.jsdelivr.net/gh/devicons/devicon/icons/javascript/javascript-original.svg"
+                            alt="JS" width="32">
+                        <span>JavaScript</span>
+                    </div>
+                    <div class="logo-card mini">
+                        <img src="https://cdn.jsdelivr.net/gh/devicons/devicon/icons/typescript/typescript-original.svg"
+                            alt="TS" width="32">
+                        <span>TypeScript</span>
+                    </div>
+                    <div class="logo-card mini">
+                        <img src="https://cdn.jsdelivr.net/gh/devicons/devicon/icons/python/python-original.svg"
+                            alt="Python" width="32">
+                        <span>Python</span>
+                    </div>
+                    <div class="logo-card mini">
+                        <img src="https://cdn.jsdelivr.net/gh/devicons/devicon/icons/rust/rust-original.svg" alt="Rust"
+                            width="32">
+                        <span>Rust</span>
+                    </div>
+                    <div class="logo-card mini">
+                        <img src="https://cdn.jsdelivr.net/gh/devicons/devicon/icons/go/go-original.svg" alt="Go"
+                            width="32">
+                        <span>Go</span>
+                    </div>
+                    <div class="logo-card mini">
+                        <img src="https://cdn.jsdelivr.net/gh/devicons/devicon/icons/java/java-original.svg" alt="Java"
+                            width="32">
+                        <span>Java</span>
+                    </div>
+                    <div class="logo-card mini">
+                        <img src="https://cdn.jsdelivr.net/gh/devicons/devicon/icons/php/php-original.svg" alt="PHP"
+                            width="32">
+                        <span>PHP</span>
+                    </div>
+                    <div class="logo-card mini">
+                        <img src="https://cdn.jsdelivr.net/gh/devicons/devicon/icons/ruby/ruby-original.svg" alt="Ruby"
+                            width="32">
+                        <span>Ruby</span>
+                    </div>
+                    <div class="logo-card mini">
+                        <img src="https://cdn.jsdelivr.net/gh/devicons/devicon/icons/csharp/csharp-original.svg"
+                            alt="C#" width="32">
+                        <span>.NET</span>
+                    </div>
+                    <div class="logo-card mini">
+                        <img src="https://cdn.jsdelivr.net/gh/devicons/devicon/icons/zig/zig-original.svg" alt="Zig"
+                            width="32">
+                        <span>Zig</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Bottom CTA -->
+    <section class="cta-section"
+        style="padding: 6rem 0; text-align: center; background: radial-gradient(circle at center, #EEF2FF 0%, transparent 60%);">
+        <div class="container">
+            <h2 style="font-size: 2.5rem; margin-bottom: 1.5rem;">Ready to speed up your workflow?</h2>
+            <p
+                style="font-size: 1.2rem; color: var(--color-text-secondary); margin-bottom: 3rem; max-width: 500px; margin-left: auto; margin-right: auto;">
+                Install Devrunner today and never worry about which package manager to use again.
+            </p>
+            <div class="hero-cta">
+                <a href="docs.html" class="btn btn-primary" style="padding: 1rem 2rem; font-size: 1.1rem;">Install
+                    devrunner</a>
+            </div>
+        </div>
+    </section>
+    <footer class="footer">
+        <div class="container">
+            <p>© 2025 devrunner. All rights reserved.</p>
+        </div>
+    </footer>
+
+    <script>
+        lucide.createIcons();
+
+        // Simple scroll effect for navbar border
+        window.addEventListener('scroll', () => {
+            if (window.scrollY > 10) document.body.classList.add('scrolled');
+            else document.body.classList.remove('scrolled');
+        });
+    </script>
+</body>
+
+</html>
