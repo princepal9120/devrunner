@@ -5,7 +5,7 @@ use serde::{Deserialize, Serialize};
 use std::env;
 use std::fs;
 
-const GITHUB_REPO: &str = "verseles/run";
+const GITHUB_REPO: &str = "princepal9120/devrunner";
 const UPDATE_TIMEOUT_SECS: u64 = 5;
 
 #[derive(Debug, Serialize, Deserialize)]
@@ -98,11 +98,11 @@ fn get_asset_name() -> Option<String> {
     let arch = env::consts::ARCH;
 
     let platform = match (os, arch) {
-        ("linux", "x86_64") => "run-linux-x86_64",
-        ("linux", "aarch64") => "run-linux-aarch64",
-        ("macos", "x86_64") => "run-macos-x86_64",
-        ("macos", "aarch64") => "run-macos-aarch64",
-        ("windows", "x86_64") => "run-windows-x86_64.exe",
+        ("linux", "x86_64") => "devrunner-linux-x86_64",
+        ("linux", "aarch64") => "devrunner-linux-aarch64",
+        ("macos", "x86_64") => "devrunner-macos-x86_64",
+        ("macos", "aarch64") => "devrunner-macos-aarch64",
+        ("windows", "x86_64") => "devrunner-windows-x86_64.exe",
         _ => return None,
     };
 
@@ -170,7 +170,7 @@ pub async fn perform_update_check() -> Result<(), Box<dyn std::error::Error>> {
             "https://api.github.com/repos/{}/releases/latest",
             GITHUB_REPO
         ))
-        .header("User-Agent", format!("run-cli/{}", current_version()))
+        .header("User-Agent", format!("devrunner/{}", current_version()))
         .send()
         .await?
         .json()
@@ -266,7 +266,7 @@ pub async fn perform_blocking_update(quiet: bool) -> Result<bool, Box<dyn std::e
             "https://api.github.com/repos/{}/releases/latest",
             GITHUB_REPO
         ))
-        .header("User-Agent", format!("run-cli/{}", current_version()))
+        .header("User-Agent", format!("devrunner/{}", current_version()))
         .send()
         .await?
         .json()
