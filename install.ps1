@@ -27,9 +27,16 @@ function Get-LatestVersion {
 }
 
 function Install-Devrunner {
+    # ASCII Art Banner
     Write-Host ""
-    Write-Host "  🚀 devrunner - Universal Task Runner Installer" -ForegroundColor Magenta
-    Write-Host "  ===========================================" -ForegroundColor Magenta
+    Write-Host "  ██████╗ ███████╗██╗   ██╗██████╗ ██╗   ██╗███╗   ██╗███╗   ██╗███████╗██████╗ " -ForegroundColor Blue
+    Write-Host "  ██╔══██╗██╔════╝██║   ██║██╔══██╗██║   ██║████╗  ██║████╗  ██║██╔════╝██╔══██╗" -ForegroundColor Blue
+    Write-Host "  ██║  ██║█████╗  ██║   ██║██████╔╝██║   ██║██╔██╗ ██║██╔██╗ ██║█████╗  ██████╔╝" -ForegroundColor Blue
+    Write-Host "  ██║  ██║██╔══╝  ╚██╗ ██╔╝██╔══██╗██║   ██║██║╚██╗██║██║╚██╗██║██╔══╝  ██╔══██╗" -ForegroundColor Blue
+    Write-Host "  ██████╔╝███████╗ ╚████╔╝ ██║  ██║╚██████╔╝██║ ╚████║██║ ╚████║███████╗██║  ██║" -ForegroundColor Blue
+    Write-Host "  ╚═════╝ ╚══════╝  ╚═══╝  ╚═╝  ╚═╝ ╚═════╝ ╚═╝  ╚═══╝╚═╝  ╚═══╝╚══════╝╚═╝  ╚═╝" -ForegroundColor Blue
+    Write-Host ""
+    Write-Host "                   🚀 Universal Task Runner" -ForegroundColor Green
     Write-Host ""
 
     # Detect architecture
@@ -119,9 +126,10 @@ function Install-Devrunner {
         }
 
         Write-Host ""
-        Write-Success "Installation complete!"
+        Write-Host "  ✅ Installation complete!" -ForegroundColor Green
         Write-Host ""
-        Write-Host "  Run 'devrunner --help' to get started" -ForegroundColor Cyan
+        Write-Host "  Run " -NoNewline; Write-Host "devrunner --help" -ForegroundColor Blue -NoNewline; Write-Host " to get started"
+        Write-Host "  Example: " -NoNewline; Write-Host "devrunner test" -ForegroundColor Blue -NoNewline; Write-Host " or " -NoNewline; Write-Host "devrunner build" -ForegroundColor Blue
         Write-Host ""
 
     } finally {
