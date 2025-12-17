@@ -113,10 +113,10 @@ download_binary() {
     print_info "Downloading ${asset_name}..."
 
     local tmp_dir=$(mktemp -d)
-    local tmp_binary="${tmp_dir}/${BINARY_NAME}"
+    local tmp_binary="${tmp_dir}/${asset_name}"
     local tmp_checksum="${tmp_dir}/${asset_name}.sha256"
 
-    # Download binary
+    # Download binary with original asset name for checksum verification
     if ! curl -sL "$download_url" -o "$tmp_binary"; then
         print_error "Failed to download binary"
         rm -rf "$tmp_dir"
@@ -128,13 +128,13 @@ download_binary() {
     if curl -sL "$checksum_url" -o "$tmp_checksum" 2>/dev/null; then
         cd "$tmp_dir"
         if command -v sha256sum &> /dev/null; then
-            if sha256sum -c "$tmp_checksum" --status 2>/dev/null; then
+            if sha256sum -c "${asset_name}.sha256" --status 2>/dev/null; then
                 print_success "Checksum verified"
             else
                 print_warning "Checksum verification failed (continuing anyway)"
             fi
         elif command -v shasum &> /dev/null; then
-            if shasum -a 256 -c "$tmp_checksum" --status 2>/dev/null; then
+            if shasum -a 256 -c "${asset_name}.sha256" --status 2>/dev/null; then
                 print_success "Checksum verified"
             else
                 print_warning "Checksum verification failed (continuing anyway)"
@@ -146,13 +146,16 @@ download_binary() {
     else
         print_warning "Could not download checksum file, skipping verification"
     fi
+    
+    # Rename binary to final name
+    mv "$tmp_binary" "${tmp_dir}/${BINARY_NAME}"
 
     # Create install directory if needed
     mkdir -p "$INSTALL_DIR"
 
     # Install binary
     print_info "Installing to ${INSTALL_DIR}/${BINARY_NAME}..."
-    mv "$tmp_binary" "${INSTALL_DIR}/${BINARY_NAME}"
+    mv "${tmp_dir}/${BINARY_NAME}" "${INSTALL_DIR}/${BINARY_NAME}"
     chmod +x "${INSTALL_DIR}/${BINARY_NAME}"
 
     # Cleanup
