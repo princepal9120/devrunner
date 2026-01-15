@@ -71,6 +71,12 @@ pub enum Commands {
         #[arg(value_enum)]
         shell: clap_complete::Shell,
     },
+    /// List available scripts/commands for the current project
+    List,
+    /// Show why a specific runner was selected
+    Why,
+    /// Diagnose project setup and detect issues
+    Doctor,
 }
 
 impl Cli {

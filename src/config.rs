@@ -1,4 +1,5 @@
 use serde::{Deserialize, Serialize};
+use std::collections::HashMap;
 use std::fs;
 use std::path::{Path, PathBuf};
 
@@ -16,6 +17,10 @@ pub struct Config {
     pub verbose: Option<bool>,
     /// Enable quiet mode
     pub quiet: Option<bool>,
+    /// Custom command aliases (e.g., "t" -> "test")
+    pub aliases: HashMap<String, String>,
+    /// Show execution time after command completes
+    pub show_timing: Option<bool>,
 }
 
 impl Config {
@@ -61,6 +66,10 @@ impl Config {
 
     /// Merge two configs, with other taking precedence
     pub fn merge(self, other: Config) -> Self {
+        // Merge aliases, with other taking precedence for conflicts
+        let mut merged_aliases = self.aliases;
+        merged_aliases.extend(other.aliases);
+        
         Config {
             max_levels: other.max_levels.or(self.max_levels),
             auto_update: other.auto_update.or(self.auto_update),
@@ -71,6 +80,8 @@ impl Config {
             },
             verbose: other.verbose.or(self.verbose),
             quiet: other.quiet.or(self.quiet),
+            aliases: merged_aliases,
+            show_timing: other.show_timing.or(self.show_timing),
         }
     }
 
@@ -92,6 +103,20 @@ impl Config {
     /// Get quiet setting with default fallback
     pub fn get_quiet(&self) -> bool {
         self.quiet.unwrap_or(false)
+    }
+
+    /// Get show timing setting with default fallback
+    pub fn get_show_timing(&self) -> bool {
+        self.show_timing.unwrap_or(false)
+    }
+
+    /// Resolve an alias to its actual command
+    /// Returns the original command if no alias is found
+    pub fn resolve_alias(&self, command: &str) -> String {
+        self.aliases
+            .get(command)
+            .cloned()
+            .unwrap_or_else(|| command.to_string())
     }
 
     /// Ensure config directory exists
@@ -131,6 +156,8 @@ mod tests {
             ignore_tools: vec!["npm".to_string()],
             verbose: None,
             quiet: None,
+            aliases: HashMap::new(),
+            show_timing: None,
         };
 
         let override_config = Config {
@@ -139,6 +166,8 @@ mod tests {
             ignore_tools: vec!["yarn".to_string()],
             verbose: Some(true),
             quiet: None,
+            aliases: HashMap::new(),
+            show_timing: None,
         };
 
         let merged = base.merge(override_config);
