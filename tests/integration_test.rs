@@ -3,10 +3,18 @@
 use assert_cmd::Command;
 use predicates::prelude::*;
 use std::fs::{self, File};
+use std::path::PathBuf;
 use tempfile::tempdir;
 
 fn run_cmd() -> Command {
     Command::cargo_bin("devrunner").unwrap()
+}
+
+fn fixture_path(name: &str) -> PathBuf {
+    PathBuf::from(env!("CARGO_MANIFEST_DIR"))
+        .join("tests")
+        .join("fixtures")
+        .join(name)
 }
 
 #[test]
@@ -176,6 +184,40 @@ fn test_levels_limit() {
 }
 
 #[test]
+fn test_levels_from_local_config() {
+    let dir = tempdir().unwrap();
+    File::create(dir.path().join("package.json")).unwrap();
+
+    let deep_subdir = dir.path().join("a").join("b").join("c").join("d");
+    fs::create_dir_all(&deep_subdir).unwrap();
+    fs::write(deep_subdir.join("run.toml"), "max_levels = 5\n").unwrap();
+
+    run_cmd()
+        .current_dir(&deep_subdir)
+        .args(["test", "--dry-run"])
+        .assert()
+        .success()
+        .stdout(predicate::str::contains("npm run test"));
+}
+
+#[test]
+fn test_cli_levels_override_local_config() {
+    let dir = tempdir().unwrap();
+    File::create(dir.path().join("package.json")).unwrap();
+
+    let deep_subdir = dir.path().join("a").join("b").join("c").join("d");
+    fs::create_dir_all(&deep_subdir).unwrap();
+    fs::write(deep_subdir.join("run.toml"), "max_levels = 5\n").unwrap();
+
+    run_cmd()
+        .current_dir(&deep_subdir)
+        .args(["test", "--levels=0"])
+        .assert()
+        .failure()
+        .stderr(predicate::str::contains("No runner found"));
+}
+
+#[test]
 fn test_extra_args() {
     let dir = tempdir().unwrap();
     File::create(dir.path().join("package.json")).unwrap();
@@ -289,4 +331,34 @@ fn test_mix_detection() {
         .assert()
         .success()
         .stdout(predicate::str::contains("mix test"));
+}
+
+#[test]
+fn test_list_subcommand_with_fixture() {
+    run_cmd()
+        .current_dir(fixture_path("node-npm"))
+        .arg("list")
+        .assert()
+        .success()
+        .stdout(predicate::str::contains("Available scripts"));
+}
+
+#[test]
+fn test_why_subcommand_with_fixture() {
+    run_cmd()
+        .current_dir(fixture_path("node-npm"))
+        .arg("why")
+        .assert()
+        .success()
+        .stdout(predicate::str::contains("Runner Selection Analysis"));
+}
+
+#[test]
+fn test_doctor_subcommand_with_fixture() {
+    run_cmd()
+        .current_dir(fixture_path("node-npm"))
+        .arg("doctor")
+        .assert()
+        .success()
+        .stdout(predicate::str::contains("Project Detection"));
 }

@@ -33,7 +33,7 @@ fn main() {
     // Merge config with CLI arguments
     let verbose = cli.verbose || config.get_verbose();
     let quiet = cli.quiet || config.get_quiet();
-    let max_levels = cli.levels;
+    let max_levels = cli.levels.unwrap_or(config.get_max_levels());
     let mut ignore_list = config.ignore_tools.clone();
     ignore_list.extend(cli.ignore.clone());
 
@@ -128,18 +128,27 @@ fn main() {
     // Check if script exists and suggest alternatives if not (for Node.js projects)
     if runner.ecosystem == devrunner::detectors::Ecosystem::NodeJs {
         if let Some(script_list) = scripts::get_scripts_for_runner(&runner, &working_dir) {
-            let script_names: Vec<String> = script_list.scripts.iter().map(|s| s.name.clone()).collect();
-            
+            let script_names: Vec<String> =
+                script_list.scripts.iter().map(|s| s.name.clone()).collect();
+
             if !devrunner::fuzzy::is_exact_match(&command, &script_names) {
                 use owo_colors::OwoColorize;
-                
+
                 output::error(&format!("Script \"{}\" not found", command));
                 println!();
-                println!("{}", format!("Available scripts: {}", script_names.join(", ")).dimmed());
-                
-                if let Some(suggestion) = devrunner::fuzzy::suggest_script(&command, &script_names) {
+                println!(
+                    "{}",
+                    format!("Available scripts: {}", script_names.join(", ")).dimmed()
+                );
+
+                if let Some(suggestion) = devrunner::fuzzy::suggest_script(&command, &script_names)
+                {
                     println!();
-                    println!("💡 Did you mean: {} {}", "devrunner".cyan(), suggestion.green().bold());
+                    println!(
+                        "💡 Did you mean: {} {}",
+                        "devrunner".cyan(),
+                        suggestion.green().bold()
+                    );
                 }
                 process::exit(exit_codes::GENERIC_ERROR);
             }
@@ -171,13 +180,18 @@ fn main() {
         use owo_colors::OwoColorize;
         let elapsed = start_time.elapsed();
         let seconds = elapsed.as_secs_f64();
-        
+
         if seconds < 60.0 {
             eprintln!("\n{} Completed in {:.2}s", "✓".green(), seconds);
         } else {
             let minutes = (seconds / 60.0).floor() as u64;
             let remaining_secs = seconds % 60.0;
-            eprintln!("\n{} Completed in {}m {:.1}s", "✓".green(), minutes, remaining_secs);
+            eprintln!(
+                "\n{} Completed in {}m {:.1}s",
+                "✓".green(),
+                minutes,
+                remaining_secs
+            );
         }
     }
 
@@ -212,30 +226,47 @@ fn handle_list_command(ignore_list: &[String], max_levels: u8, verbose: bool) {
     };
 
     // Find the project directory
-    let (runners, working_dir) = match search_runners(&current_dir, max_levels, ignore_list, verbose) {
-        Ok(result) => result,
-        Err(e) => {
-            output::error(&e.to_string());
-            process::exit(e.exit_code());
-        }
-    };
+    let (runners, working_dir) =
+        match search_runners(&current_dir, max_levels, ignore_list, verbose) {
+            Ok(result) => result,
+            Err(e) => {
+                output::error(&e.to_string());
+                process::exit(e.exit_code());
+            }
+        };
 
     if runners.is_empty() {
         output::error("No runner detected in this project");
         process::exit(exit_codes::RUNNER_NOT_FOUND);
     }
 
-    let runner = &runners[0];
-    println!("📦 Detected: {} ({})", runner.name.green(), runner.detected_file.dimmed());
+    let runner = match check_conflicts(&runners, verbose) {
+        Ok(r) => r,
+        Err(e) => {
+            output::error(&e.to_string());
+            process::exit(e.exit_code());
+        }
+    };
+
+    println!(
+        "📦 Detected: {} ({})",
+        runner.name.green(),
+        runner.detected_file.dimmed()
+    );
     println!();
 
     // Get scripts for this runner
-    if let Some(script_list) = scripts::get_scripts_for_runner(runner, &working_dir) {
+    if let Some(script_list) = scripts::get_scripts_for_runner(&runner, &working_dir) {
         println!("{}", "Available scripts:".bold());
-        
+
         // Find the longest script name for alignment
-        let max_name_len = script_list.scripts.iter().map(|s| s.name.len()).max().unwrap_or(0);
-        
+        let max_name_len = script_list
+            .scripts
+            .iter()
+            .map(|s| s.name.len())
+            .max()
+            .unwrap_or(0);
+
         for script in &script_list.scripts {
             println!(
                 "  {}{}  {}",
@@ -252,7 +283,7 @@ fn handle_list_command(ignore_list: &[String], max_levels: u8, verbose: bool) {
 }
 
 /// Handle the `why` subcommand - explain runner selection
-fn handle_why_command(ignore_list: &[String], max_levels: u8, _verbose: bool) {
+fn handle_why_command(ignore_list: &[String], max_levels: u8, verbose: bool) {
     use devrunner::detectors::detect_all;
     use owo_colors::OwoColorize;
 
@@ -292,12 +323,36 @@ fn handle_why_command(ignore_list: &[String], max_levels: u8, _verbose: bool) {
     let filtered_runners: Vec<_> = all_runners
         .iter()
         .filter(|r| !ignore_list.iter().any(|i| i.eq_ignore_ascii_case(&r.name)))
+        .cloned()
         .collect();
 
     println!("{}", "Runner Selection Analysis".bold().underline());
     println!();
 
-    if let Some(selected) = filtered_runners.first() {
+    if filtered_runners.is_empty() {
+        println!("{}", "All detected runners were ignored!".red());
+        println!();
+        println!("{}", "Detected (but ignored):".bold());
+        for runner in &all_runners {
+            println!(
+                "  {} {} - {}",
+                "•".dimmed(),
+                runner.name,
+                runner.detected_file
+            );
+        }
+        process::exit(exit_codes::SUCCESS);
+    }
+
+    let selected = match check_conflicts(&filtered_runners, verbose) {
+        Ok(r) => r,
+        Err(e) => {
+            output::error(&e.to_string());
+            process::exit(e.exit_code());
+        }
+    };
+
+    {
         println!("📦 {} {}", "Using:".bold(), selected.name.green().bold());
         println!(
             "   {} Found {} in {} (level {})",
@@ -317,11 +372,16 @@ fn handle_why_command(ignore_list: &[String], max_levels: u8, _verbose: bool) {
         if all_runners.len() > 1 {
             println!("{}", "Other detected runners:".bold());
             for runner in &all_runners {
-                if runner.name != selected.name {
-                    let status = if ignore_list.iter().any(|i| i.eq_ignore_ascii_case(&runner.name)) {
+                if runner.name != selected.name || runner.detected_file != selected.detected_file {
+                    let status = if ignore_list
+                        .iter()
+                        .any(|i| i.eq_ignore_ascii_case(&runner.name))
+                    {
                         "(ignored via --ignore)".red().to_string()
                     } else {
-                        format!("(priority {})", runner.priority).dimmed().to_string()
+                        format!("(priority {})", runner.priority)
+                            .dimmed()
+                            .to_string()
                     };
                     println!(
                         "  {} {} - {} {}",
@@ -332,13 +392,6 @@ fn handle_why_command(ignore_list: &[String], max_levels: u8, _verbose: bool) {
                     );
                 }
             }
-        }
-    } else {
-        println!("{}", "All detected runners were ignored!".red());
-        println!();
-        println!("{}", "Detected (but ignored):".bold());
-        for runner in &all_runners {
-            println!("  {} {} - {}", "•".dimmed(), runner.name, runner.detected_file);
         }
     }
 
@@ -362,7 +415,8 @@ fn handle_doctor_command(ignore_list: &[String], max_levels: u8) {
     println!();
 
     // Find project directory
-    let (runners, working_dir) = match search_runners(&current_dir, max_levels, ignore_list, false) {
+    let (runners, working_dir) = match search_runners(&current_dir, max_levels, ignore_list, false)
+    {
         Ok(result) => result,
         Err(_) => {
             println!("{} No project detected", "❌".red());
@@ -374,10 +428,22 @@ fn handle_doctor_command(ignore_list: &[String], max_levels: u8) {
     println!("  {} Project root: {}", "→".dimmed(), working_dir.display());
     println!();
 
+    let selected_runner = match check_conflicts(&runners, false) {
+        Ok(r) => {
+            println!("{} {} ({})", "✓".green(), r.name, r.detected_file.dimmed());
+            Some(r)
+        }
+        Err(e) => {
+            println!("{} {}", "❌".red(), e.to_string().red());
+            None
+        }
+    };
+    println!();
+
     // Check all runners and their tools
     println!("{}", "Detected Runners:".bold());
     let all_runners = detect_all(&working_dir, &[]);
-    
+
     for runner in &all_runners {
         let installed = is_tool_installed(&runner.name);
         let status_text = if installed {
@@ -386,7 +452,7 @@ fn handle_doctor_command(ignore_list: &[String], max_levels: u8) {
         } else {
             format!("{}", "not installed".red())
         };
-        
+
         if installed {
             print!("  {} ", "✓".green());
         } else {
@@ -394,17 +460,16 @@ fn handle_doctor_command(ignore_list: &[String], max_levels: u8) {
         }
         println!(
             "{} ({}) - {}",
-            runner.name,
-            runner.detected_file,
-            status_text
+            runner.name, runner.detected_file, status_text
         );
     }
     println!();
 
     // Check for conflicts
     let mut has_conflicts = false;
-    let mut ecosystems: std::collections::HashMap<String, Vec<String>> = std::collections::HashMap::new();
-    
+    let mut ecosystems: std::collections::HashMap<String, Vec<String>> =
+        std::collections::HashMap::new();
+
     for runner in &all_runners {
         ecosystems
             .entry(runner.ecosystem.as_str().to_string())
@@ -424,20 +489,22 @@ fn handle_doctor_command(ignore_list: &[String], max_levels: u8) {
             );
         }
     }
-    
+
     if !has_conflicts {
         println!("  {} No lockfile conflicts detected", "✓".green());
     }
     println!();
 
     // Script count
-    if let Some(script_list) = scripts::get_scripts_for_runner(&runners[0], &working_dir) {
-        println!(
-            "{} {} scripts available in {}",
-            "✓".green(),
-            script_list.scripts.len(),
-            script_list.source_file
-        );
+    if let Some(selected) = selected_runner {
+        if let Some(script_list) = scripts::get_scripts_for_runner(&selected, &working_dir) {
+            println!(
+                "{} {} scripts available in {}",
+                "✓".green(),
+                script_list.scripts.len(),
+                script_list.source_file
+            );
+        }
     }
 
     process::exit(exit_codes::SUCCESS);
@@ -456,10 +523,7 @@ fn get_tool_version(tool: &str) -> Option<String> {
         _ => "--version",
     };
 
-    let output = Command::new(tool)
-        .arg(version_flag)
-        .output()
-        .ok()?;
+    let output = Command::new(tool).arg(version_flag).output().ok()?;
 
     if output.status.success() {
         let version = String::from_utf8_lossy(&output.stdout);
@@ -467,7 +531,12 @@ fn get_tool_version(tool: &str) -> Option<String> {
         // Extract just the version number if possible
         let version = version
             .split_whitespace()
-            .find(|s| s.chars().next().map(|c| c.is_ascii_digit()).unwrap_or(false))
+            .find(|s| {
+                s.chars()
+                    .next()
+                    .map(|c| c.is_ascii_digit())
+                    .unwrap_or(false)
+            })
             .unwrap_or(version);
         Some(version.trim_start_matches('v').to_string())
     } else {

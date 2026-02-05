@@ -26,6 +26,22 @@ function Get-LatestVersion {
     return $release.tag_name
 }
 
+function Resolve-InstallDir {
+    $userLocal = "$env:USERPROFILE\.local\bin"
+    try {
+        New-Item -ItemType Directory -Path $userLocal -Force | Out-Null
+        return $userLocal
+    } catch {}
+
+    $programFilesDir = Join-Path $env:ProgramFiles "devrunner"
+    try {
+        New-Item -ItemType Directory -Path $programFilesDir -Force | Out-Null
+        return $programFilesDir
+    } catch {
+        throw "Could not create install directory in $userLocal or $programFilesDir"
+    }
+}
+
 function Install-Devrunner {
     # ASCII Art Banner
     Write-Host ""
@@ -42,6 +58,9 @@ function Install-Devrunner {
     # Detect architecture
     $arch = Get-Architecture
     Write-Info "Detected architecture: windows-$arch"
+
+    $InstallDir = Resolve-InstallDir
+    Write-Info "Install directory: $InstallDir"
 
     # Get latest version
     $version = Get-LatestVersion
@@ -76,19 +95,18 @@ function Install-Devrunner {
 
         # Download and verify checksum
         Write-Info "Verifying checksum..."
-        try {
-            Invoke-WebRequest -Uri $checksumUrl -OutFile $tempChecksum -UseBasicParsing
-            $expectedHash = (Get-Content $tempChecksum).Split(" ")[0].ToUpper()
-            $actualHash = (Get-FileHash -Path $tempBinary -Algorithm SHA256).Hash.ToUpper()
-
-            if ($expectedHash -eq $actualHash) {
-                Write-Success "Checksum verified"
-            } else {
-                Write-Warning "Checksum mismatch (continuing anyway)"
-            }
-        } catch {
-            Write-Warning "Could not verify checksum (continuing anyway)"
+        Invoke-WebRequest -Uri $checksumUrl -OutFile $tempChecksum -UseBasicParsing
+        $checksumContent = (Get-Content $tempChecksum -Raw).Trim()
+        $expectedHash = $checksumContent.Split()[0].ToUpper()
+        if (-not $expectedHash -or $expectedHash.Length -ne 64) {
+            throw "Invalid checksum file format for $assetBase"
         }
+        $actualHash = (Get-FileHash -Path $tempBinary -Algorithm SHA256).Hash.ToUpper()
+
+        if ($expectedHash -ne $actualHash) {
+            throw "Checksum mismatch for $assetBase"
+        }
+        Write-Success "Checksum verified"
 
         # Create install directory
         if (-not (Test-Path $InstallDir)) {

@@ -2,8 +2,10 @@ use crate::config::Config;
 use crate::output;
 use chrono::{DateTime, Duration, Utc};
 use serde::{Deserialize, Serialize};
+use sha2::{Digest, Sha256};
 use std::env;
 use std::fs;
+use std::io;
 
 const GITHUB_REPO: &str = "princepal9120/devrunner";
 const UPDATE_TIMEOUT_SECS: u64 = 5;
@@ -29,6 +31,64 @@ struct GitHubRelease {
 struct GitHubAsset {
     name: String,
     browser_download_url: String,
+}
+
+fn parse_checksum_file(content: &str) -> Option<String> {
+    let checksum = content.split_whitespace().next()?;
+    if checksum.len() == 64 && checksum.chars().all(|c| c.is_ascii_hexdigit()) {
+        Some(checksum.to_ascii_lowercase())
+    } else {
+        None
+    }
+}
+
+fn sha256_hex(bytes: &[u8]) -> String {
+    let mut hasher = Sha256::new();
+    hasher.update(bytes);
+    format!("{:x}", hasher.finalize())
+}
+
+async fn download_and_verify_asset(
+    client: &reqwest::Client,
+    download_url: &str,
+) -> Result<Vec<u8>, Box<dyn std::error::Error>> {
+    let binary_bytes = client
+        .get(download_url)
+        .send()
+        .await?
+        .error_for_status()?
+        .bytes()
+        .await?;
+
+    let checksum_url = format!("{}.sha256", download_url);
+    let checksum_content = client
+        .get(&checksum_url)
+        .send()
+        .await?
+        .error_for_status()?
+        .text()
+        .await?;
+
+    let expected = parse_checksum_file(&checksum_content).ok_or_else(|| {
+        io::Error::new(
+            io::ErrorKind::InvalidData,
+            "Invalid checksum file format for release asset",
+        )
+    })?;
+
+    let actual = sha256_hex(&binary_bytes);
+    if actual != expected {
+        return Err(io::Error::new(
+            io::ErrorKind::InvalidData,
+            format!(
+                "Checksum mismatch for downloaded asset (expected {}, got {})",
+                expected, actual
+            ),
+        )
+        .into());
+    }
+
+    Ok(binary_bytes.to_vec())
 }
 
 /// Check if auto-update is disabled via environment variable
@@ -196,8 +256,7 @@ pub async fn perform_update_check() -> Result<(), Box<dyn std::error::Error>> {
         .ok_or("Asset not found for this platform")?;
 
     // Download the new binary
-    let response = client.get(&asset.browser_download_url).send().await?;
-    let bytes = response.bytes().await?;
+    let bytes = download_and_verify_asset(&client, &asset.browser_download_url).await?;
 
     // Get current executable path
     let current_exe = env::current_exe()?;
@@ -206,7 +265,7 @@ pub async fn perform_update_check() -> Result<(), Box<dyn std::error::Error>> {
     let temp_path = current_exe.with_extension("new");
 
     // Write the new binary
-    fs::write(&temp_path, bytes)?;
+    fs::write(&temp_path, &bytes)?;
 
     // Make executable on Unix
     #[cfg(unix)]
@@ -302,8 +361,7 @@ pub async fn perform_blocking_update(quiet: bool) -> Result<bool, Box<dyn std::e
         .ok_or("Asset not found for this platform")?;
 
     // Download the new binary
-    let response = client.get(&asset.browser_download_url).send().await?;
-    let bytes = response.bytes().await?;
+    let bytes = download_and_verify_asset(&client, &asset.browser_download_url).await?;
 
     // Get current executable path
     let current_exe = env::current_exe()?;
@@ -312,7 +370,7 @@ pub async fn perform_blocking_update(quiet: bool) -> Result<bool, Box<dyn std::e
     let temp_path = current_exe.with_extension("new");
 
     // Write the new binary
-    fs::write(&temp_path, bytes)?;
+    fs::write(&temp_path, &bytes)?;
 
     // Make executable on Unix
     #[cfg(unix)]
@@ -366,5 +424,25 @@ mod tests {
             all(target_os = "windows", target_arch = "x86_64")
         ))]
         assert!(asset.is_some());
+    }
+
+    #[test]
+    fn test_parse_checksum_file() {
+        let parsed = parse_checksum_file(
+            "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855  devrunner",
+        );
+        assert_eq!(
+            parsed,
+            Some("e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855".to_string())
+        );
+        assert!(parse_checksum_file("invalid-checksum").is_none());
+    }
+
+    #[test]
+    fn test_sha256_hex() {
+        assert_eq!(
+            sha256_hex(b"abc"),
+            "ba7816bf8f01cfea414140de5dae2223b00361a396177a9cb410ff61f20015ad"
+        );
     }
 }

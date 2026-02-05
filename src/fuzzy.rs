@@ -1,14 +1,14 @@
-/// Fuzzy string matching utilities for script suggestions
-/// 
-/// This module implements Levenshtein distance for finding similar strings,
-/// useful for suggesting corrections when a user types an incorrect command.
+//! Fuzzy string matching utilities for script suggestions.
+//!
+//! This module implements Levenshtein distance for finding similar strings,
+//! useful for suggesting corrections when a user types an incorrect command.
 
 /// Calculate the Levenshtein distance between two strings
-/// 
+///
 /// This is a classic dynamic programming algorithm that measures the minimum
 /// number of single-character edits (insertions, deletions, substitutions)
 /// required to change one string into another.
-/// 
+///
 /// # Rust Concepts Learned:
 /// - Dynamic programming with 2D vectors
 /// - String slicing with .chars()
@@ -16,36 +16,44 @@
 pub fn levenshtein_distance(a: &str, b: &str) -> usize {
     let a_chars: Vec<char> = a.chars().collect();
     let b_chars: Vec<char> = b.chars().collect();
-    
+
     let len_a = a_chars.len();
     let len_b = b_chars.len();
-    
+
     // Early exit for empty strings
-    if len_a == 0 { return len_b; }
-    if len_b == 0 { return len_a; }
-    
+    if len_a == 0 {
+        return len_b;
+    }
+    if len_b == 0 {
+        return len_a;
+    }
+
     // Create a 2D matrix for dynamic programming
     let mut matrix: Vec<Vec<usize>> = vec![vec![0; len_b + 1]; len_a + 1];
-    
+
     // Initialize first row and column
-    for i in 0..=len_a {
-        matrix[i][0] = i;
+    for (i, row) in matrix.iter_mut().enumerate().take(len_a + 1) {
+        row[0] = i;
     }
-    for j in 0..=len_b {
-        matrix[0][j] = j;
+    for (j, cell) in matrix[0].iter_mut().enumerate().take(len_b + 1) {
+        *cell = j;
     }
-    
+
     // Fill in the rest of the matrix
     for i in 1..=len_a {
         for j in 1..=len_b {
-            let cost = if a_chars[i - 1] == b_chars[j - 1] { 0 } else { 1 };
-            
-            matrix[i][j] = (matrix[i - 1][j] + 1)           // deletion
-                .min(matrix[i][j - 1] + 1)                   // insertion
-                .min(matrix[i - 1][j - 1] + cost);           // substitution
+            let cost = if a_chars[i - 1] == b_chars[j - 1] {
+                0
+            } else {
+                1
+            };
+
+            matrix[i][j] = (matrix[i - 1][j] + 1) // deletion
+                .min(matrix[i][j - 1] + 1) // insertion
+                .min(matrix[i - 1][j - 1] + cost); // substitution
         }
     }
-    
+
     matrix[len_a][len_b]
 }
 
@@ -54,17 +62,17 @@ pub fn levenshtein_distance(a: &str, b: &str) -> usize {
 pub fn similarity_score(a: &str, b: &str) -> f64 {
     let distance = levenshtein_distance(a, b);
     let max_len = a.len().max(b.len());
-    
+
     if max_len == 0 {
         return 1.0;
     }
-    
+
     1.0 - (distance as f64 / max_len as f64)
 }
 
 /// Find the best matching scripts for a given input
 /// Returns matches sorted by similarity (best first)
-/// 
+///
 /// # Rust Concepts Learned:
 /// - Sorting with sort_by() and custom comparators
 /// - Closures with |a, b| syntax
@@ -75,7 +83,7 @@ pub fn find_similar_scripts<'a>(
     threshold: f64,
 ) -> Vec<(&'a str, f64)> {
     let input_lower = input.to_lowercase();
-    
+
     let mut matches: Vec<(&str, f64)> = available_scripts
         .iter()
         .map(|script| {
@@ -85,10 +93,10 @@ pub fn find_similar_scripts<'a>(
         })
         .filter(|(_, score)| *score >= threshold)
         .collect();
-    
+
     // Sort by score descending (best match first)
     matches.sort_by(|a, b| b.1.partial_cmp(&a.1).unwrap());
-    
+
     matches
 }
 
@@ -101,7 +109,9 @@ pub fn suggest_script(input: &str, available_scripts: &[String]) -> Option<Strin
 /// Check if input is an exact match (case-insensitive)
 pub fn is_exact_match(input: &str, available_scripts: &[String]) -> bool {
     let input_lower = input.to_lowercase();
-    available_scripts.iter().any(|s| s.to_lowercase() == input_lower)
+    available_scripts
+        .iter()
+        .any(|s| s.to_lowercase() == input_lower)
 }
 
 #[cfg(test)]
@@ -146,11 +156,7 @@ mod tests {
 
     #[test]
     fn test_suggest_script() {
-        let scripts = vec![
-            "dev".to_string(),
-            "build".to_string(),
-            "test".to_string(),
-        ];
+        let scripts = vec!["dev".to_string(), "build".to_string(), "test".to_string()];
 
         assert_eq!(suggest_script("tets", &scripts), Some("test".to_string()));
         assert_eq!(suggest_script("bld", &scripts), Some("build".to_string()));
@@ -160,7 +166,7 @@ mod tests {
     #[test]
     fn test_is_exact_match() {
         let scripts = vec!["dev".to_string(), "Build".to_string()];
-        
+
         assert!(is_exact_match("dev", &scripts));
         assert!(is_exact_match("DEV", &scripts));
         assert!(is_exact_match("build", &scripts));

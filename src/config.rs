@@ -69,7 +69,7 @@ impl Config {
         // Merge aliases, with other taking precedence for conflicts
         let mut merged_aliases = self.aliases;
         merged_aliases.extend(other.aliases);
-        
+
         Config {
             max_levels: other.max_levels.or(self.max_levels),
             auto_update: other.auto_update.or(self.auto_update),

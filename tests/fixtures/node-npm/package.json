@@ -1,0 +1,7 @@
+{
+  "name": "node-npm-fixture",
+  "scripts": {
+    "test": "echo test",
+    "build": "echo build"
+  }
+}

@@ -36,8 +36,8 @@ pub struct Cli {
     pub args: Vec<String>,
 
     /// How many directory levels to search above current dir
-    #[arg(short, long, default_value = "3", value_parser = clap::value_parser!(u8).range(0..=10))]
-    pub levels: u8,
+    #[arg(short, long, value_parser = clap::value_parser!(u8).range(0..=10))]
+    pub levels: Option<u8>,
 
     /// Runners to ignore (comma-separated or multiple flags)
     #[arg(short, long = "ignore", value_delimiter = ',')]
@@ -135,13 +135,13 @@ mod tests {
     #[test]
     fn test_levels() {
         let cli = Cli::parse_from(["devrunner", "test", "--levels=5"]);
-        assert_eq!(cli.levels, 5);
+        assert_eq!(cli.levels, Some(5));
     }
 
     #[test]
     fn test_default_levels() {
         let cli = Cli::parse_from(["devrunner", "test"]);
-        assert_eq!(cli.levels, 3);
+        assert_eq!(cli.levels, None);
     }
 
     #[test]

@@ -1,34 +1,19 @@
-# 🚀 devrunner
+# devrunner
 
-> **Universal task runner for modern development.**
-> Detects your project's tools (npm, cargo, maven, etc.) and runs commands automatically.
+Universal task runner for modern development.
 
+`devrunner` detects your project tooling (npm, pnpm, cargo, poetry, go, maven, and more) and runs the right command without needing to remember ecosystem-specific syntax.
 
-```
- ██████╗ ███████╗██╗   ██╗██████╗ ██╗   ██╗███╗   ██╗███╗   ██╗███████╗██████╗ 
- ██╔══██╗██╔════╝██║   ██║██╔══██╗██║   ██║████╗  ██║████╗  ██║██╔════╝██╔══██╗
- ██║  ██║█████╗  ██║   ██║██████╔╝██║   ██║██╔██╗ ██║██╔██╗ ██║█████╗  ██████╔╝
- ██║  ██║██╔══╝  ╚██╗ ██╔╝██╔══██╗██║   ██║██║╚██╗██║██║╚██╗██║██╔══╝  ██╔══██╗
- ██████╔╝███████╗ ╚████╔╝ ██║  ██║╚██████╔╝██║ ╚████║██║ ╚████║███████╗██║  ██║
- ╚═════╝ ╚══════╝  ╚═══╝  ╚═╝  ╚═╝ ╚═════╝ ╚═╝  ╚═══╝╚═╝  ╚═══╝╚══════╝╚═╝  ╚═╝
- 
-                     Universal Task Runner
+## Why devrunner
 
-```
+- Auto-detects 20+ runners across Node.js, Python, Rust, Go, Java, Ruby, PHP, .NET, Elixir, Swift, Zig, and Make.
+- Works from nested directories by searching parent directories for project markers.
+- Handles lockfile/tool conflicts and returns CI-safe exit codes.
+- Includes shell completions and optional background self-update.
 
-**devrunner** eliminates the mental overhead of switching between languages and project structures. Stop remembering if it's `npm run`, `yarn run`, `cargo run`, `mvn exec`, or `python -m`. Just type `devrunner run`.
+## Installation
 
-## ✨ Why devrunner?
-
-- 🧠 **Smart Detection**: Automatically identifies 20+ build tools (Node.js, Rust, Python, Go, Java, PHP, etc.).
-- � **Recursive Power**: Run commands from *any* subdirectory; `devrunner` finds the root config.
-- ⚡ **Blazing Fast**: Written in Rust. Cold start < 50ms.
-- 🔧 **Zero Config**: No setup required. It just works.
-- 🆕 **Self-Updating**: Keeps itself up to date silently in the background.
-
-## 📦 Installation
-
-### Quick Install (Mac/Linux)
+### Mac/Linux
 
 ```bash
 curl -fsSL https://raw.githubusercontent.com/princepal9120/devrunner/main/install.sh | bash
@@ -40,81 +25,134 @@ curl -fsSL https://raw.githubusercontent.com/princepal9120/devrunner/main/instal
 irm https://raw.githubusercontent.com/princepal9120/devrunner/main/install.ps1 | iex
 ```
 
-### From Source (Rust)
+### From source
 
 ```bash
 cargo install devrunner
 ```
 
-## 🚀 Usage
+## Usage
 
-Basic syntax: `devrunner <command> [args...]`
+Basic syntax:
 
-| Goal | Traditional Command | With devrunner |
-| :--- | :--- | :--- |
-| **Run Tests** | `npm test` OR `cargo test` OR `go test` | `devrunner test` |
-| **Build App** | `npm run build` OR `cargo build` | `devrunner build` |
-| **Start Server** | `npm start` OR `python manage.py runserver` | `devrunner start` |
-| **Lint Code** | `npm run lint` OR `cargo clippy` | `devrunner lint` |
-
-### Passing Arguments
-Use `--` to pass flags directly to the underlying tool:
 ```bash
-# equivalent to: npm run test -- --verbose
-devrunner test -- --verbose
+devrunner <command> [args...] [flags] [-- extra-args]
 ```
 
-## 🎯 Supported Ecosystems
+Examples:
 
-| Language | Tools Detected |
-| :--- | :--- |
-| **JavaScript/TS** | `npm`, `yarn`, `pnpm`, `bun` |
-| **Rust** | `cargo` |
-| **Python** | `pip`, `poetry`, `pipenv`, `uv` |
-| **Go** | `go mod`, `task` |
-| **Java** | `maven`, `gradle` |
-| **PHP** | `composer` |
-| **Ruby** | `bundler`, `rake` |
-| **.NET** | `dotnet` |
-| **Others** | `make`, `zig`, `swift`, `elixir` |
+```bash
+# Run tests with detected tool
+devrunner test
 
-## ⚙️ Configuration (Optional)
+# Run from nested directory (searches parent folders)
+devrunner build
 
-You can configure global preferences in `~/.config/devrunner/config.toml` or per-project in `devrunner.toml`.
+# Increase search depth
+devrunner lint --levels=5
+
+# Ignore specific tools
+devrunner start --ignore=npm,yarn
+
+# Print command without executing
+devrunner test --dry-run
+
+# Pass raw arguments through to underlying runner
+devrunner test -- --coverage --verbose
+
+# Force blocking update
+devrunner --update
+
+# Inspect detection behavior
+devrunner why
+
+# Diagnose tool installation and conflicts
+devrunner doctor
+
+# List available scripts/targets for supported project types
+devrunner list
+```
+
+## Supported Ecosystems
+
+| Ecosystem | Detected tools |
+| --- | --- |
+| JavaScript/TypeScript | bun, pnpm, yarn, npm |
+| Python | uv, poetry, pipenv, pip |
+| Rust | cargo |
+| Go | task, go |
+| Java | gradle, maven |
+| Ruby | bundler, rake |
+| PHP | composer |
+| .NET | dotnet |
+| Elixir | mix |
+| Swift | swift |
+| Zig | zig |
+| Generic | make |
+
+## Configuration
+
+Config precedence is:
+
+1. Built-in defaults
+2. Global config: `~/.config/run/config.toml`
+3. Local config: `./run.toml`
+4. CLI flags
+
+Example global/local config:
 
 ```toml
-[config]
-auto_update = true      # Enable/disable background updates
-verbose = false         # Show detailed detection logs
-ignore_tools = ["npm"]  # Tools to skip during detection
+max_levels = 5
+auto_update = true
+ignore_tools = ["npm"]
+verbose = false
+quiet = false
+show_timing = false
+
+[aliases]
+t = "test"
+b = "build"
 ```
 
-## 🐚 Shell Architecture
+## Exit Codes
 
-Enable tab completions for your shell:
+- `0`: Success
+- `1`: Generic CLI/runtime error
+- `2`: Runner not found
+- `3`: Lockfile conflict
+- `127`: Detected tool is not installed
+
+## Shell Completions
+
+Generate completion files:
 
 ```bash
-# Zsh
-devrunner completions zsh > ~/.zsh/completion/_devrunner
-
-# Bash
 devrunner completions bash > ~/.local/share/bash-completion/completions/devrunner
-
-# Fish
+devrunner completions zsh > ~/.zsh/completion/_devrunner
 devrunner completions fish > ~/.config/fish/completions/devrunner.fish
+devrunner completions powershell > _devrunner.ps1
 ```
 
-## 🤝 Contributing
+For zsh, ensure your `fpath` includes `~/.zsh/completion` and run `compinit`.
 
-We love contributors! 
-1. Fork the repo.
-2. Clone it: `git clone https://github.com/princepal9120/devrunner.git`
-3. Create a branch: `git checkout -b feature/cool-thing`
-4. Submit a PR.
+## Local Development
 
-## 📄 License
+Run the same checks as CI:
 
-Licensed under **AGPL-3.0**. See [LICENSE](LICENSE) for details.
+```bash
+./scripts/pre-push.sh
+```
 
----
-*Built with ❤️ for developers who value their keystrokes.*
+It runs formatting, clippy, tests, and security audit (when `cargo-audit` is installed).
+
+## Release Artifacts
+
+Tag pushes matching `v*` trigger cross-platform builds and GitHub release publishing via `.github/workflows/ci.yml`.
+
+## Changelog
+
+See `CHANGELOG.md` for unreleased and released changes.
+
+## License
+
+Licensed under AGPL-3.0. See `LICENSE`.

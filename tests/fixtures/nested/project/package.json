@@ -1,0 +1,6 @@
+{
+  "name": "nested-fixture",
+  "scripts": {
+    "lint": "echo lint"
+  }
+}

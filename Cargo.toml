@@ -32,6 +32,7 @@ toml = "0.8"
 
 # Versioning
 semver = "1.0"
+sha2 = "0.10"
 
 # Terminal colors and formatting
 owo-colors = "4.1"
