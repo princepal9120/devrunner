@@ -8,6 +8,7 @@ Universal task runner for modern development.
 
 - Auto-detects 20+ runners across Node.js, Python, Rust, Go, Java, Ruby, PHP, .NET, Elixir, Swift, Zig, and Make.
 - Works from nested directories by searching parent directories for project markers.
+- Monorepo-aware for Node workspaces: prefers root lockfile manager (pnpm/yarn/bun/npm lock) over leaf `package.json` fallback.
 - Handles lockfile/tool conflicts and returns CI-safe exit codes.
 - Includes shell completions and optional background self-update.
 
@@ -47,6 +48,9 @@ devrunner test
 
 # Run from nested directory (searches parent folders)
 devrunner build
+
+# In monorepos, prefers workspace lockfile tool over leaf package fallback
+devrunner test --levels=5
 
 # Increase search depth
 devrunner lint --levels=5

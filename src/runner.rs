@@ -20,6 +20,7 @@ pub fn search_runners(
     verbose: bool,
 ) -> Result<(Vec<DetectedRunner>, PathBuf), RunError> {
     let mut current_dir = start_dir.to_path_buf();
+    let mut deferred_node_fallback: Option<(Vec<DetectedRunner>, PathBuf)> = None;
 
     for level in 0..=max_levels {
         if verbose {
@@ -28,7 +29,24 @@ pub fn search_runners(
 
         let runners = detect_all(&current_dir, ignore_list);
         if !runners.is_empty() {
-            return Ok((runners, current_dir));
+            if is_node_manifest_only_detection(&runners) {
+                // In monorepos, leaf packages often have only package.json while
+                // the actual package manager lockfile is at workspace root.
+                if deferred_node_fallback.is_none() {
+                    deferred_node_fallback = Some((runners, current_dir.clone()));
+                }
+            } else if deferred_node_fallback.is_some() {
+                // If we deferred a node fallback and later found a node runner
+                // with stronger evidence (lockfile), prefer that.
+                if runners
+                    .iter()
+                    .any(|runner| runner.ecosystem == Ecosystem::NodeJs)
+                {
+                    return Ok((runners, current_dir));
+                }
+            } else {
+                return Ok((runners, current_dir));
+            }
         }
 
         // Move up one directory
@@ -39,7 +57,20 @@ pub fn search_runners(
         }
     }
 
+    if let Some(fallback) = deferred_node_fallback {
+        return Ok(fallback);
+    }
+
     Err(RunError::RunnerNotFound(max_levels))
+}
+
+fn is_node_manifest_only_detection(runners: &[DetectedRunner]) -> bool {
+    !runners.is_empty()
+        && runners.iter().all(|runner| {
+            runner.ecosystem == Ecosystem::NodeJs
+                && runner.name == "npm"
+                && runner.detected_file == "package.json"
+        })
 }
 
 /// Check for lockfile conflicts within the same ecosystem
@@ -234,6 +265,35 @@ mod tests {
 
         let result = search_runners(dir.path(), 3, &["npm".to_string()], false);
         assert!(matches!(result, Err(RunError::RunnerNotFound(3))));
+    }
+
+    #[test]
+    fn test_search_runners_monorepo_prefers_root_lockfile() {
+        let dir = tempdir().unwrap();
+        File::create(dir.path().join("package.json")).unwrap();
+        File::create(dir.path().join("pnpm-lock.yaml")).unwrap();
+
+        let subdir = dir.path().join("apps").join("web");
+        std::fs::create_dir_all(&subdir).unwrap();
+        File::create(subdir.join("package.json")).unwrap();
+
+        let (runners, found_dir) = search_runners(&subdir, 5, &[], false).unwrap();
+        assert_eq!(found_dir, dir.path());
+        assert_eq!(runners[0].name, "pnpm");
+    }
+
+    #[test]
+    fn test_search_runners_node_fallback_not_overridden_by_other_ecosystem() {
+        let dir = tempdir().unwrap();
+        File::create(dir.path().join("Cargo.toml")).unwrap();
+
+        let subdir = dir.path().join("web");
+        std::fs::create_dir_all(&subdir).unwrap();
+        File::create(subdir.join("package.json")).unwrap();
+
+        let (runners, found_dir) = search_runners(&subdir, 5, &[], false).unwrap();
+        assert_eq!(found_dir, subdir);
+        assert_eq!(runners[0].name, "npm");
     }
 
     #[test]

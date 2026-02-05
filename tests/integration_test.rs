@@ -362,3 +362,39 @@ fn test_doctor_subcommand_with_fixture() {
         .success()
         .stdout(predicate::str::contains("Project Detection"));
 }
+
+#[test]
+fn test_monorepo_prefers_workspace_lockfile_runner() {
+    let dir = tempdir().unwrap();
+    File::create(dir.path().join("package.json")).unwrap();
+    File::create(dir.path().join("pnpm-lock.yaml")).unwrap();
+    File::create(dir.path().join("pnpm-workspace.yaml")).unwrap();
+
+    let subdir = dir.path().join("apps").join("web");
+    fs::create_dir_all(&subdir).unwrap();
+    File::create(subdir.join("package.json")).unwrap();
+
+    run_cmd()
+        .current_dir(&subdir)
+        .args(["test", "--dry-run", "--levels=5"])
+        .assert()
+        .success()
+        .stdout(predicate::str::contains("pnpm run test"));
+}
+
+#[test]
+fn test_node_leaf_not_overridden_by_parent_non_node_project() {
+    let dir = tempdir().unwrap();
+    File::create(dir.path().join("Cargo.toml")).unwrap();
+
+    let subdir = dir.path().join("frontend");
+    fs::create_dir_all(&subdir).unwrap();
+    File::create(subdir.join("package.json")).unwrap();
+
+    run_cmd()
+        .current_dir(&subdir)
+        .args(["test", "--dry-run", "--levels=5"])
+        .assert()
+        .success()
+        .stdout(predicate::str::contains("npm run test"));
+}
