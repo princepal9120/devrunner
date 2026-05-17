@@ -186,8 +186,15 @@ check_path() {
 # Main installation flow
 main() {
     echo ""
-    echo "  🚀 devrunner - Universal Task Runner Installer"
-    echo "  ==========================================="
+    echo -e "${BLUE}"
+    echo "  ██████╗ ███████╗██╗   ██╗██████╗ ██╗   ██╗███╗   ██╗███╗   ██╗███████╗██████╗ "
+    echo "  ██╔══██╗██╔════╝██║   ██║██╔══██╗██║   ██║████╗  ██║████╗  ██║██╔════╝██╔══██╗"
+    echo "  ██║  ██║█████╗  ██║   ██║██████╔╝██║   ██║██╔██╗ ██║██╔██╗ ██║█████╗  ██████╔╝"
+    echo "  ██║  ██║██╔══╝  ╚██╗ ██╔╝██╔══██╗██║   ██║██║╚██╗██║██║╚██╗██║██╔══╝  ██╔══██╗"
+    echo "  ██████╔╝███████╗ ╚████╔╝ ██║  ██║╚██████╔╝██║ ╚████║██║ ╚████║███████╗██║  ██║"
+    echo "  ╚═════╝ ╚══════╝  ╚═══╝  ╚═╝  ╚═╝ ╚═════╝ ╚═╝  ╚═══╝╚═╝  ╚═══╝╚══════╝╚═╝  ╚═╝"
+    echo -e "${NC}"
+    echo -e "${GREEN}              🚀 Universal Task Runner Installer${NC}"
     echo ""
 
     detect_platform
@@ -195,9 +202,10 @@ main() {
     download_binary
     check_path
 
-    print_success "Installation complete!"
     echo ""
-    echo "  Run 'devrunner --help' or 'dr --help' to get started"
+    echo -e "${GREEN}  ✅ Installation complete!${NC}"
+    echo ""
+    echo -e "  Run ${BLUE}devrunner --help${NC} or ${BLUE}dr --help${NC} to get started"
     echo ""
 }
 
