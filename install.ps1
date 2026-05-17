@@ -116,34 +116,6 @@ function Install-devrunner {
             }
         }
 
-        # Setup AI coding assistants
-        $snippet = "`n## devrunner`nUse ``dr <command>`` or ``devrunner <command>`` as the universal task runner.`nDo NOT call npm run, cargo, make, etc. directly - use ``dr <command>`` instead.`nExamples: ``dr test``, ``dr build``, ``dr lint``, ``dr dev``"
-        $claudeDir = Join-Path $env:USERPROFILE ".claude"
-        $claudeMd = Join-Path $claudeDir "CLAUDE.md"
-        if (Test-Path $claudeDir) {
-            if (-not (Select-String -Path $claudeMd -Pattern "devrunner" -Quiet -ErrorAction SilentlyContinue)) {
-                Add-Content -Path $claudeMd -Value $snippet
-                Write-Success "Configured Claude Code ($claudeMd)"
-            }
-        }
-        foreach ($dir in @("$env:USERPROFILE\.config\opencode", "$env:USERPROFILE\.opencode")) {
-            if (Test-Path $dir) {
-                $agentsMd = Join-Path $dir "AGENTS.md"
-                if (-not (Select-String -Path $agentsMd -Pattern "devrunner" -Quiet -ErrorAction SilentlyContinue)) {
-                    Add-Content -Path $agentsMd -Value $snippet
-                    Write-Success "Configured OpenCode ($agentsMd)"
-                }
-            }
-        }
-        $codexDir = Join-Path $env:USERPROFILE ".codex"
-        if (Test-Path $codexDir) {
-            $agentsMd = Join-Path $codexDir "AGENTS.md"
-            if (-not (Select-String -Path $agentsMd -Pattern "devrunner" -Quiet -ErrorAction SilentlyContinue)) {
-                Add-Content -Path $agentsMd -Value $snippet
-                Write-Success "Configured Codex ($agentsMd)"
-            }
-        }
-
         Write-Host ""
         Write-Success "Installation complete!"
         Write-Host ""
