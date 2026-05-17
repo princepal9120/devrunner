@@ -59,9 +59,6 @@ chrono = { version = "0.4", features = ["serde"] }
 # For which command detection
 which = "7.0"
 
-# DNS resolver for update checks (Termux compatibility)
-hickory-resolver = "0.25"
-
 # Command parsing
 shell-words = "1.1"
 
