@@ -1,20 +1,9 @@
-// Copyright (C) 2025 Verseles
-//
-// This program is free software: you can redistribute it and/or modify
-// it under the terms of the GNU Affero General Public License as published
-// by the Free Software Foundation, version 3 of the License.
-//
-// This program is distributed in the hope that it will be useful,
-// but WITHOUT ANY WARRANTY; without even the implied warranty of
-// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
-// GNU Affero General Public License for more details.
-
 use clap::{Parser, Subcommand};
 
 /// Universal task runner - automatically detects and runs project commands
 #[derive(Parser, Debug, Clone)]
 #[command(name = "devrunner")]
-#[command(author = "Verseles")]
+#[command(author = "princepal9120")]
 #[command(version)]
 #[command(about = "Universal task runner for modern development", long_about = None)]
 #[command(after_help = "SUPPORTED RUNNERS:
@@ -63,7 +52,7 @@ pub struct Cli {
     pub quiet: bool,
 
     /// Show command without executing
-    #[arg(long)]
+    #[arg(long = "dry-devrunner", visible_alias = "dry-run")]
     pub dry_run: bool,
 
     /// Force immediate update check
@@ -163,6 +152,12 @@ mod tests {
     #[test]
     fn test_dry_run() {
         let cli = Cli::parse_from(["devrunner", "test", "--dry-devrunner"]);
+        assert!(cli.dry_run);
+    }
+
+    #[test]
+    fn test_dry_run_alias() {
+        let cli = Cli::parse_from(["devrunner", "test", "--dry-run"]);
         assert!(cli.dry_run);
     }
 }

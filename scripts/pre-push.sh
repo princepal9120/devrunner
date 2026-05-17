@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Copyright (C) 2025 Verseles
+# Copyright (C) 2025 princepal9120
 # SPDX-License-Identifier: AGPL-3.0
 
 # Pre-push hook script to devrunner CI checks locally before pushing

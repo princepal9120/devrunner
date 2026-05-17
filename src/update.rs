@@ -1,14 +1,3 @@
-// Copyright (C) 2025 Verseles
-//
-// This program is free software: you can redistribute it and/or modify
-// it under the terms of the GNU Affero General Public License as published
-// by the Free Software Foundation, version 3 of the License.
-//
-// This program is distributed in the hope that it will be useful,
-// but WITHOUT ANY WARRANTY; without even the implied warranty of
-// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
-// GNU Affero General Public License for more details.
-
 use crate::config::Config;
 use crate::http;
 use crate::output;
@@ -17,7 +6,7 @@ use serde::{Deserialize, Serialize};
 use std::env;
 use std::fs;
 
-const GITHUB_REPO: &str = "verseles/devrunner";
+const GITHUB_REPO: &str = "princepal9120/devrunner";
 const UPDATE_TIMEOUT_SECS: u64 = 5;
 
 #[derive(Debug, Serialize, Deserialize)]

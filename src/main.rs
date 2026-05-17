@@ -1,15 +1,4 @@
-// Copyright (C) 2025 Verseles
-//
-// This program is free software: you can redistribute it and/or modify
-// it under the terms of the GNU Affero General Public License as published
-// by the Free Software Foundation, version 3 of the License.
-//
-// This program is distributed in the hope that it will be useful,
-// but WITHOUT ANY WARRANTY; without even the implied warranty of
-// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
-// GNU Affero General Public License for more details.
-
-use clap::{CommandFactory, Parser};
+use clap::{CommandFactory, FromArgMatches};
 use clap_complete::generate;
 use run_cli::cli::{Cli, Commands};
 use run_cli::config::Config;
@@ -36,8 +25,17 @@ fn main() {
         return;
     }
 
+    // Detect binary name (supports 'dr' alias)
+    let binary_name = env::args()
+        .next()
+        .as_deref()
+        .and_then(|p| std::path::Path::new(p).file_stem()?.to_str())
+        .unwrap_or("devrunner")
+        .to_owned();
+
     // Parse CLI arguments
-    let cli = Cli::parse();
+    let matches = Cli::command().name(&binary_name).get_matches();
+    let cli = Cli::from_arg_matches(&matches).unwrap_or_else(|e| e.exit());
 
     // Load configuration
     let config = Config::load();
@@ -54,7 +52,7 @@ fn main() {
 
     // Handle subcommands
     if let Some(Commands::Completions { shell }) = cli.subcommand {
-        let mut cmd = Cli::command();
+        let mut cmd = Cli::command().name(&binary_name);
         let name = cmd.get_name().to_string();
         generate(shell, &mut cmd, name, &mut io::stdout());
         return;
@@ -79,8 +77,7 @@ fn main() {
     let command = match &cli.command {
         Some(cmd) => cmd.clone(),
         None => {
-            // If no command, just show help
-            Cli::command().print_help().unwrap();
+            Cli::command().name(&binary_name).print_help().unwrap();
             println!();
             process::exit(exit_codes::SUCCESS);
         }

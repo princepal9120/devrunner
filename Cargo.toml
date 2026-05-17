@@ -2,11 +2,11 @@
 name = "devrunner-cli"
 version = "0.6.0"
 edition = "2021"
-authors = ["Verseles"]
+authors = ["princepal9120"]
 description = "Universal task runner for modern development - automatically detects and runs project commands"
-documentation = "https://github.com/verseles/devrunner"
-homepage = "https://github.com/verseles/devrunner"
-repository = "https://github.com/verseles/devrunner"
+documentation = "https://github.com/princepal9120/devrunner"
+homepage = "https://github.com/princepal9120/devrunner"
+repository = "https://github.com/princepal9120/devrunner"
 readme = "README.md"
 license = "AGPL-3.0"
 keywords = ["cli", "task-runner", "npm", "yarn", "pnpm", "cargo", "make"]
@@ -15,6 +15,14 @@ categories = ["command-line-utilities", "development-tools"]
 [[bin]]
 name = "devrunner"
 path = "src/main.rs"
+
+[[bin]]
+name = "dr"
+path = "src/main.rs"
+
+[lib]
+name = "run_cli"
+path = "src/lib.rs"
 
 [dependencies]
 # CLI parsing

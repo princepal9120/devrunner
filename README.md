@@ -2,15 +2,18 @@
 
 **One command. Any project. Zero configuration.**
 
-[![CI](https://github.com/verseles/devrunner/workflows/CI/badge.svg)](https://github.com/verseles/devrunner/actions)
-[![Release](https://img.shields.io/github/v/release/verseles/devrunner)](https://github.com/verseles/devrunner/releases)
+[![CI](https://github.com/princepal9120/devrunner/workflows/CI/badge.svg)](https://github.com/princepal9120/devrunner/actions)
+[![Release](https://img.shields.io/github/v/release/princepal9120/devrunner)](https://github.com/princepal9120/devrunner/releases)
 [![License](https://img.shields.io/badge/license-AGPL--3.0-blue)](LICENSE)
+[![Contributions welcome](https://img.shields.io/badge/contributions-welcome-brightgreen)](CONTRIBUTING.md)
 
 ```
 devrunner test
+# or the short alias:
+dr test
 ```
 
-That's it. Whether your project uses npm, yarn, pnpm, bun, cargo, poetry, gradle, or any of 20+ other tools — `devrunner` figures it out.
+That's it. Whether your project uses npm, yarn, pnpm, bun, cargo, poetry, gradle, or any of 20+ other tools — `devrunner` (or `dr`) figures it out.
 
 ## Why?
 
@@ -24,10 +27,10 @@ Every project has its own package manager. Every time you switch projects, you a
 
 ```bash
 # Linux/macOS
-curl -fsSL install.cat/verseles/devrunner | bash
+curl -fsSL install.cat/princepal9120/devrunner | bash
 
 # Windows (PowerShell)
-irm install.cat/verseles/devrunner | iex
+irm install.cat/princepal9120/devrunner | iex
 
 # Or via Cargo
 cargo install devrunner-cli
@@ -134,23 +137,55 @@ Disable with:
 devrunner completions bash > ~/.local/share/bash-completion/completions/devrunner
 
 # Zsh
-devrunner completions zsh > ~/.zsh/completion/_run
+devrunner completions zsh > ~/.zsh/completion/_devrunner
 
 # Fish
 devrunner completions fish > ~/.config/fish/completions/devrunner.fish
 
 # PowerShell
 devrunner completions powershell >> $PROFILE
+
+# Alias completions are also available
+dr completions bash > ~/.local/share/bash-completion/completions/dr
+dr completions zsh > ~/.zsh/completion/_dr
 ```
+
+## AI Agent Integration
+
+The installer automatically configures AI coding assistants (Claude Code, OpenCode, Codex) to use `dr` as the universal task runner.
+
+If you installed manually or want to reconfigure, add this to your AI tool's global config:
+
+**Claude Code** (`~/.claude/CLAUDE.md`):
+```markdown
+## devrunner
+Use `dr <command>` or `devrunner <command>` as the universal task runner.
+Do NOT call npm run, cargo, make, etc. directly — use `dr <command>` instead.
+Examples: `dr test`, `dr build`, `dr lint`, `dr dev`
+```
+
+**OpenCode / Codex** (`~/.config/opencode/AGENTS.md` or `~/.codex/AGENTS.md`): same content.
 
 ## Development
 
 ```bash
-git clone https://github.com/verseles/devrunner.git
+git clone https://github.com/princepal9120/devrunner.git
 cd devrunner
 make precommit   # Format, lint, test, audit
 cargo build --release
 ```
+
+## Contributing
+
+Contributions are welcome. Good first contributions include new ecosystem detection tests, clearer error messages, install-script fixes, and documentation improvements.
+
+Before opening a PR, run:
+
+```bash
+make precommit
+```
+
+See [CONTRIBUTING.md](CONTRIBUTING.md) for setup, testing guidance, and the pull request checklist. Please also read the [Code of Conduct](CODE_OF_CONDUCT.md) and report vulnerabilities through the private process in [SECURITY.md](SECURITY.md).
 
 ## License
 
@@ -158,4 +193,4 @@ AGPL-3.0. See [LICENSE](LICENSE).
 
 ---
 
-Made with mass production by [Verseles](https://github.com/verseles)
+Made with mass production by [princepal9120](https://github.com/princepal9120)

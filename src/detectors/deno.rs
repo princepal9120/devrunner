@@ -1,14 +1,3 @@
-// Copyright (C) 2025 Verseles
-//
-// This program is free software: you can redistribute it and/or modify
-// it under the terms of the GNU Affero General Public License as published
-// by the Free Software Foundation, version 3 of the License.
-//
-// This program is distributed in the hope that it will be useful,
-// but WITHOUT ANY WARRANTY; without even the implied warranty of
-// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
-// GNU Affero General Public License for more details.
-
 use super::{CommandSupport, CommandValidator, DetectedRunner, Ecosystem};
 use std::fs;
 use std::path::Path;
@@ -240,7 +229,11 @@ mod tests {
     fn test_deno_task_in_json() {
         let dir = tempdir().unwrap();
         let mut file = File::create(dir.path().join("deno.json")).unwrap();
-        writeln!(file, r#"{{ "tasks": {{ "start": "deno devrunner main.ts" }} }}"#).unwrap();
+        writeln!(
+            file,
+            r#"{{ "tasks": {{ "start": "deno devrunner main.ts" }} }}"#
+        )
+        .unwrap();
 
         let validator = DenoValidator;
         assert_eq!(

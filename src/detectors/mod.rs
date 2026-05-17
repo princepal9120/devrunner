@@ -1,14 +1,3 @@
-// Copyright (C) 2025 Verseles
-//
-// This program is free software: you can redistribute it and/or modify
-// it under the terms of the GNU Affero General Public License as published
-// by the Free Software Foundation, version 3 of the License.
-//
-// This program is distributed in the hope that it will be useful,
-// but WITHOUT ANY WARRANTY; without even the implied warranty of
-// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
-// GNU Affero General Public License for more details.
-
 pub mod custom;
 pub mod deno;
 pub mod dotnet;
@@ -169,8 +158,22 @@ const PNPM_BUILTINS: &[&str] = &[
 ];
 
 const BUN_BUILTINS: &[&str] = &[
-    "add", "bun", "create", "discord", "help", "init", "install", "link", "pm", "remove", "rm",
-    "devrunner", "test", "update", "upgrade", "x",
+    "add",
+    "bun",
+    "create",
+    "discord",
+    "help",
+    "init",
+    "install",
+    "link",
+    "pm",
+    "remove",
+    "rm",
+    "devrunner",
+    "test",
+    "update",
+    "upgrade",
+    "x",
 ];
 
 const PIP_BUILTINS: &[&str] = &[
@@ -365,14 +368,22 @@ impl DetectedRunner {
                 if PNPM_BUILTINS.contains(&task) {
                     vec!["pnpm".to_string(), task.to_string()]
                 } else {
-                    vec!["pnpm".to_string(), "devrunner".to_string(), task.to_string()]
+                    vec![
+                        "pnpm".to_string(),
+                        "devrunner".to_string(),
+                        task.to_string(),
+                    ]
                 }
             }
             "yarn" => {
                 if YARN_BUILTINS.contains(&task) {
                     vec!["yarn".to_string(), task.to_string()]
                 } else {
-                    vec!["yarn".to_string(), "devrunner".to_string(), task.to_string()]
+                    vec![
+                        "yarn".to_string(),
+                        "devrunner".to_string(),
+                        task.to_string(),
+                    ]
                 }
             }
             "npm" => {
@@ -386,8 +397,16 @@ impl DetectedRunner {
             // Python ecosystem
             "rye" => vec!["rye".to_string(), "devrunner".to_string(), task.to_string()],
             "uv" => vec!["uv".to_string(), "devrunner".to_string(), task.to_string()],
-            "poetry" => vec!["poetry".to_string(), "devrunner".to_string(), task.to_string()],
-            "pipenv" => vec!["pipenv".to_string(), "devrunner".to_string(), task.to_string()],
+            "poetry" => vec![
+                "poetry".to_string(),
+                "devrunner".to_string(),
+                task.to_string(),
+            ],
+            "pipenv" => vec![
+                "pipenv".to_string(),
+                "devrunner".to_string(),
+                task.to_string(),
+            ],
             "pip" => {
                 if PIP_BUILTINS.contains(&task) {
                     vec![
@@ -409,14 +428,22 @@ impl DetectedRunner {
                 if deno::DENO_BUILTIN.contains(&task) {
                     vec!["deno".to_string(), task.to_string()]
                 } else if task.contains('/') || task.ends_with(".ts") || task.ends_with(".js") {
-                    vec!["deno".to_string(), "devrunner".to_string(), task.to_string()]
+                    vec![
+                        "deno".to_string(),
+                        "devrunner".to_string(),
+                        task.to_string(),
+                    ]
                 } else {
                     vec!["deno".to_string(), "task".to_string(), task.to_string()]
                 }
             }
 
             // PHP ecosystem
-            "composer" => vec!["composer".to_string(), "devrunner".to_string(), task.to_string()],
+            "composer" => vec![
+                "composer".to_string(),
+                "devrunner".to_string(),
+                task.to_string(),
+            ],
 
             // Go ecosystem
             "task" => vec!["task".to_string(), task.to_string()],
@@ -444,7 +471,11 @@ impl DetectedRunner {
             "mix" => vec!["mix".to_string(), task.to_string()],
 
             // Swift ecosystem
-            "swift" => vec!["swift".to_string(), "devrunner".to_string(), task.to_string()],
+            "swift" => vec![
+                "swift".to_string(),
+                "devrunner".to_string(),
+                task.to_string(),
+            ],
 
             // Zig ecosystem
             "zig" => vec!["zig".to_string(), "build".to_string(), task.to_string()],
@@ -454,8 +485,16 @@ impl DetectedRunner {
 
             // Monorepo orchestration tools
             "nx" => vec!["nx".to_string(), task.to_string()],
-            "turbo" => vec!["turbo".to_string(), "devrunner".to_string(), task.to_string()],
-            "lerna" => vec!["lerna".to_string(), "devrunner".to_string(), task.to_string()],
+            "turbo" => vec![
+                "turbo".to_string(),
+                "devrunner".to_string(),
+                task.to_string(),
+            ],
+            "lerna" => vec![
+                "lerna".to_string(),
+                "devrunner".to_string(),
+                task.to_string(),
+            ],
 
             // Generic
             "make" => vec!["make".to_string(), task.to_string()],

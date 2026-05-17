@@ -170,7 +170,7 @@ Uses **hickory-resolver** for DNS (Cloudflare 1.1.1.1) + **reqwest** + **tokio**
 1. Check if interval has passed (default: 2 hours, configurable via `[update]`).
 2. POST command → spawn detached child process.
 3. Write timestamp immediately to prevent concurrent checks.
-4. Fetch `https://api.github.com/repos/verseles/devrunner/releases/latest`.
+4. Fetch `https://api.github.com/repos/princepal9120/devrunner/releases/latest`.
 5. Compare remote vs local semver.
 6. Download platform-specific binary.
 7. Atomic replace (Unix: rename, Windows: backup→rename→delete).

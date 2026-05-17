@@ -1,9 +1,3 @@
-// Copyright (C) 2025 Verseles
-//
-// This program is free software: you can redistribute it and/or modify
-// it under the terms of the GNU Affero General Public License as published
-// by the Free Software Foundation, version 3 of the License.
-
 #![allow(deprecated)]
 
 use assert_cmd::Command;
@@ -14,6 +8,10 @@ use tempfile::tempdir;
 
 fn run_cmd() -> Command {
     Command::cargo_bin("devrunner").unwrap()
+}
+
+fn run_dr_cmd() -> Command {
+    Command::cargo_bin("dr").unwrap()
 }
 
 // ============================================================================
@@ -27,6 +25,15 @@ fn test_help() {
         .assert()
         .success()
         .stdout(predicate::str::contains("Universal task runner"));
+}
+
+#[test]
+fn test_dr_alias_help_uses_alias_name() {
+    run_dr_cmd()
+        .arg("--help")
+        .assert()
+        .success()
+        .stdout(predicate::str::contains("Usage: dr"));
 }
 
 #[test]
@@ -639,7 +646,14 @@ fn test_ignore_multiple_flags() {
 
     run_cmd()
         .current_dir(dir.path())
-        .args(["test", "--ignore", "npm", "--ignore", "yarn", "--dry-devrunner"])
+        .args([
+            "test",
+            "--ignore",
+            "npm",
+            "--ignore",
+            "yarn",
+            "--dry-devrunner",
+        ])
         .assert()
         .failure()
         .stderr(predicate::str::contains("No runner found"));
@@ -812,7 +826,7 @@ fn test_completions_bash() {
         .args(["completions", "bash"])
         .assert()
         .success()
-        .stdout(predicate::str::contains("_run"));
+        .stdout(predicate::str::contains("_devrunner"));
 }
 
 #[test]

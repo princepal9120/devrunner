@@ -205,7 +205,7 @@ Implement robust parsing with type and value validation. Silently ignore unknown
 3. Executes command immediately (stdout/stderr/exit code connected to terminal)
 4. Command finishes
 5. **Before exiting**, spawn detached/daemon child process that:
-   - Queries GitHub Releases API: `GET https://api.github.com/repos/verseles/devrunner/releases/latest`
+   - Queries GitHub Releases API: `GET https://api.github.com/repos/princepal9120/devrunner/releases/latest`
    - Compares remote `tag_name` with local version (semver parsing)
    - If remote version > local:
      - Detects current platform/architecture
@@ -218,7 +218,7 @@ Implement robust parsing with type and value validation. Silently ignore unknown
          "updated_at": "2025-12-14T03:00:00Z",
          "from_version": "0.1.0",
          "to_version": "0.2.0",
-         "changelog_url": "https://github.com/verseles/devrunner/releases/tag/v0.2.0"
+         "changelog_url": "https://github.com/princepal9120/devrunner/releases/tag/v0.2.0"
        }
        ```
    - Daemon process terminates silently
@@ -242,7 +242,7 @@ On the **next execution** after a successful update:
    - Improved conflict detection
    - Fixed bug in Windows auto-update
    
-   See full changelog: https://github.com/verseles/devrunner/releases/tag/v0.2.0
+   See full changelog: https://github.com/princepal9120/devrunner/releases/tag/v0.2.0
    ```
 3. Extract changelog: fetch release via API and use `body` field (summarize first 3-5 lines if too long)
 4. Delete `update.json` after displaying (to avoid repeating)
@@ -555,9 +555,9 @@ Generate completions using `clap_complete`:
 
 **Targets**:
 - Bash: `devrunner.bash`
-- Zsh: `_run`
+- Zsh: `_devrunner`
 - Fish: `devrunner.fish`
-- PowerShell: `_run.ps1`
+- PowerShell: `devrunner.ps1`
 
 Include in releases. Add instructions in README for installation:
 
@@ -568,7 +568,7 @@ sudo cp devrunner.bash /usr/share/bash-completion/completions/devrunner
 
 **Zsh**:
 ```bash
-cp _run ~/.zsh/completion/
+cp _devrunner ~/.zsh/completion/
 ```
 
 **Fish**:
@@ -597,7 +597,7 @@ Create `install.sh` in repository root:
 **Responsibilities**:
 1. Automatically detect OS and architecture (`uname -s`, `uname -m`)
 2. Map to correct asset name in GitHub Release
-3. Download latest release from `https://github.com/verseles/devrunner/releases/latest`
+3. Download latest release from `https://github.com/princepal9120/devrunner/releases/latest`
 4. Verify SHA256 checksum (download corresponding `.sha256` file)
 5. Install in appropriate directory:
    - Preference: `$HOME/.local/bin` (if exists or create)
@@ -609,7 +609,7 @@ Create `install.sh` in repository root:
 
 **Update behavior**:
 ```bash
-curl -fsSL https://raw.githubusercontent.com/verseles/devrunner/main/install.sh | bash
+curl -fsSL https://raw.githubusercontent.com/princepal9120/devrunner/main/install.sh | bash
 ```
 
 Expected output:
@@ -630,7 +630,7 @@ Add support for package managers after stable MVP:
 
 **Priority 2**:
 - `cargo install devrunner-cli` (publish to crates.io)
-- Homebrew tap: `brew install verseles/tap/devrunner`
+- Homebrew tap: `brew install princepal9120/tap/devrunner`
 
 **Priority 3**:
 - Scoop (Windows): add to bucket
@@ -657,8 +657,8 @@ Mandatory structure:
 
 > Universal task runner for modern development
 
-[![CI](https://github.com/verseles/devrunner/workflows/CI/badge.svg)](...)
-[![Release](https://img.shields.io/github/v/release/verseles/devrunner)](...)
+[![CI](https://github.com/princepal9120/devrunner/workflows/CI/badge.svg)](...)
+[![Release](https://img.shields.io/github/v/release/princepal9120/devrunner)](...)
 [![License](https://img.shields.io/badge/license-AGPL--3.0-blue)](...)
 ```
 
@@ -686,7 +686,7 @@ List problems it solves:
 #### 4. Installation
 
 ```bash
-curl -fsSL https://raw.githubusercontent.com/verseles/devrunner/main/install.sh | bash
+curl -fsSL https://raw.githubusercontent.com/princepal9120/devrunner/main/install.sh | bash
 ```
 
 List alternative methods (cargo install, homebrew, etc. as available).

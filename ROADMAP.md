@@ -6,7 +6,7 @@ spec: |
   .NET, Elixir, Swift, Zig, Make) and delegating to the appropriate tool.
   Eliminates the need to remember which package manager each project uses.
   
-  Repository: https://github.com/verseles/devrunner
+  Repository: https://github.com/princepal9120/devrunner
   
   Performance targets:
   - Binary size < 5MB
@@ -148,7 +148,7 @@ Description: Visual demos and enhanced documentation
 Description: Publish to package managers and package registries
 
 - [ ] 11.01 Publish to crates.io as devrunner-cli
-- [ ] 11.02 Create Homebrew tap (verseles/tap/devrunner)
+- [ ] 11.02 Create Homebrew tap (princepal9120/tap/devrunner)
 - [ ] 11.03 Create Scoop manifest for Windows
 - [ ] 11.04 Create Chocolatey package for Windows
 - [ ] 11.05 Create AUR PKGBUILD for Arch Linux

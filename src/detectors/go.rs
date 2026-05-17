@@ -1,14 +1,3 @@
-// Copyright (C) 2025 Verseles
-//
-// This program is free software: you can redistribute it and/or modify
-// it under the terms of the GNU Affero General Public License as published
-// by the Free Software Foundation, version 3 of the License.
-//
-// This program is distributed in the hope that it will be useful,
-// but WITHOUT ANY WARRANTY; without even the implied warranty of
-// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
-// GNU Affero General Public License for more details.
-
 use super::{CommandSupport, CommandValidator, DetectedRunner, Ecosystem};
 use std::fs;
 use std::path::Path;
@@ -64,8 +53,24 @@ impl CommandValidator for GoValidator {
     fn supports_command(&self, _working_dir: &Path, command: &str) -> CommandSupport {
         // Go has built-in commands
         const BUILTINS: &[&str] = &[
-            "build", "clean", "doc", "env", "fix", "fmt", "generate", "get", "install", "list",
-            "mod", "work", "devrunner", "test", "tool", "version", "vet", "help",
+            "build",
+            "clean",
+            "doc",
+            "env",
+            "fix",
+            "fmt",
+            "generate",
+            "get",
+            "install",
+            "list",
+            "mod",
+            "work",
+            "devrunner",
+            "test",
+            "tool",
+            "version",
+            "vet",
+            "help",
         ];
 
         if BUILTINS.contains(&command) {

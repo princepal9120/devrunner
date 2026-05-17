@@ -1,4 +1,4 @@
-# Copyright (C) 2025 Verseles
+# Copyright (C) 2025 princepal9120
 # SPDX-License-Identifier: AGPL-3.0
 
 .PHONY: precommit fmt clippy test audit build release clean
