@@ -183,51 +183,6 @@ check_path() {
     fi
 }
 
-# Configure AI coding assistants to use devrunner
-setup_ai_integration() {
-    local snippet='
-## devrunner
-Use `dr <command>` or `devrunner <command>` as the universal task runner.
-Do NOT call npm run, cargo, make, etc. directly — use `dr <command>` instead.
-Examples: `dr test`, `dr build`, `dr lint`, `dr dev`
-'
-    local configured=0
-
-    # Claude Code
-    if [ -d "${HOME}/.claude" ] || command -v claude &>/dev/null 2>&1; then
-        mkdir -p "${HOME}/.claude"
-        if ! grep -q "devrunner" "${HOME}/.claude/CLAUDE.md" 2>/dev/null; then
-            printf "%s\n" "$snippet" >> "${HOME}/.claude/CLAUDE.md"
-            print_success "Configured Claude Code (~/.claude/CLAUDE.md)"
-            configured=$((configured + 1))
-        fi
-    fi
-
-    # OpenCode
-    for dir in "${HOME}/.config/opencode" "${HOME}/.opencode"; do
-        if [ -d "$dir" ]; then
-            if ! grep -q "devrunner" "${dir}/AGENTS.md" 2>/dev/null; then
-                printf "%s\n" "$snippet" >> "${dir}/AGENTS.md"
-                print_success "Configured OpenCode (${dir}/AGENTS.md)"
-                configured=$((configured + 1))
-            fi
-        fi
-    done
-
-    # Codex (OpenAI)
-    if [ -d "${HOME}/.codex" ]; then
-        if ! grep -q "devrunner" "${HOME}/.codex/AGENTS.md" 2>/dev/null; then
-            printf "%s\n" "$snippet" >> "${HOME}/.codex/AGENTS.md"
-            print_success "Configured Codex (~/.codex/AGENTS.md)"
-            configured=$((configured + 1))
-        fi
-    fi
-
-    if [ $configured -gt 0 ]; then
-        print_success "AI coding assistants configured to use devrunner"
-    fi
-}
-
 # Main installation flow
 main() {
     echo ""
@@ -239,7 +194,6 @@ main() {
     get_latest_version
     download_binary
     check_path
-    setup_ai_integration
 
     print_success "Installation complete!"
     echo ""
