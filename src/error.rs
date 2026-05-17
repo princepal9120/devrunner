@@ -1,3 +1,14 @@
+// Copyright (C) 2025 Verseles
+//
+// This program is free software: you can redistribute it and/or modify
+// it under the terms of the GNU Affero General Public License as published
+// by the Free Software Foundation, version 3 of the License.
+//
+// This program is distributed in the hope that it will be useful,
+// but WITHOUT ANY WARRANTY; without even the implied warranty of
+// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+// GNU Affero General Public License for more details.
+
 use thiserror::Error;
 
 /// Exit codes for the CLI
@@ -19,6 +30,9 @@ pub enum RunError {
 
     #[error("Tool not installed: {0}")]
     ToolNotInstalled(String),
+
+    #[error("Command '{0}' not supported by any detected runner ({1:?})")]
+    CommandNotSupported(String, Vec<String>),
 
     #[error("Command execution failed: {0}")]
     CommandFailed(String),

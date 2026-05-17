@@ -1,12 +1,12 @@
 [package]
-name = "devrunner"
-version = "0.1.0"
+name = "devrunner-cli"
+version = "0.6.0"
 edition = "2021"
-authors = ["PrincePal"]
+authors = ["Verseles"]
 description = "Universal task runner for modern development - automatically detects and runs project commands"
-documentation = "https://github.com/princepal9120/devrunner"
-homepage = "https://github.com/princepal9120/devrunner"
-repository = "https://github.com/princepal9120/devrunner"
+documentation = "https://github.com/verseles/devrunner"
+homepage = "https://github.com/verseles/devrunner"
+repository = "https://github.com/verseles/devrunner"
 readme = "README.md"
 license = "AGPL-3.0"
 keywords = ["cli", "task-runner", "npm", "yarn", "pnpm", "cargo", "make"]
@@ -28,11 +28,11 @@ reqwest = { version = "0.12", default-features = false, features = ["json", "rus
 # Serialization
 serde = { version = "1.0", features = ["derive"] }
 serde_json = "1.0"
+serde_yaml = "0.9"
 toml = "0.8"
 
 # Versioning
 semver = "1.0"
-sha2 = "0.10"
 
 # Terminal colors and formatting
 owo-colors = "4.1"
@@ -51,10 +51,17 @@ chrono = { version = "0.4", features = ["serde"] }
 # For which command detection
 which = "7.0"
 
+# DNS resolver for update checks (Termux compatibility)
+hickory-resolver = "0.25"
+
+# Command parsing
+shell-words = "1.1"
+
 [dev-dependencies]
 assert_cmd = "2.0"
 predicates = "3.1"
 tempfile = "3.14"
+proptest = "1.5"
 
 [profile.release]
 lto = true

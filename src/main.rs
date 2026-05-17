@@ -1,21 +1,33 @@
+// Copyright (C) 2025 Verseles
+//
+// This program is free software: you can redistribute it and/or modify
+// it under the terms of the GNU Affero General Public License as published
+// by the Free Software Foundation, version 3 of the License.
+//
+// This program is distributed in the hope that it will be useful,
+// but WITHOUT ANY WARRANTY; without even the implied warranty of
+// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+// GNU Affero General Public License for more details.
+
 use clap::{CommandFactory, Parser};
 use clap_complete::generate;
-use devrunner::cli::{Cli, Commands};
-use devrunner::config::Config;
-use devrunner::error::exit_codes;
-use devrunner::output;
-use devrunner::runner::{check_conflicts, execute, search_runners};
-use devrunner::scripts;
-use devrunner::update;
+use run_cli::cli::{Cli, Commands};
+use run_cli::config::Config;
+use run_cli::detectors::{DetectedRunner, Ecosystem, UnknownValidator};
+use run_cli::error::exit_codes;
+use run_cli::output;
+use run_cli::runner::{check_conflicts, execute, search_runners, select_runner};
+use run_cli::update;
 use std::env;
 use std::io;
 use std::process;
+use std::sync::Arc;
 
 fn main() {
     // Check for internal update flag (used by background updater)
     let args: Vec<String> = env::args().collect();
     if args.len() > 1 && args[1] == "--internal-update-check" {
-        // Run update check in background
+        // devrunner update check in background
         let rt = tokio::runtime::Builder::new_current_thread()
             .enable_all()
             .build()
@@ -33,7 +45,7 @@ fn main() {
     // Merge config with CLI arguments
     let verbose = cli.verbose || config.get_verbose();
     let quiet = cli.quiet || config.get_quiet();
-    let max_levels = cli.levels.unwrap_or(config.get_max_levels());
+    let max_levels = cli.levels;
     let mut ignore_list = config.ignore_tools.clone();
     ignore_list.extend(cli.ignore.clone());
 
@@ -41,26 +53,11 @@ fn main() {
     update::check_update_notification(quiet);
 
     // Handle subcommands
-    match &cli.subcommand {
-        Some(Commands::Completions { shell }) => {
-            let mut cmd = Cli::command();
-            let name = cmd.get_name().to_string();
-            generate(*shell, &mut cmd, name, &mut io::stdout());
-            return;
-        }
-        Some(Commands::List) => {
-            handle_list_command(&ignore_list, max_levels, verbose);
-            return;
-        }
-        Some(Commands::Why) => {
-            handle_why_command(&ignore_list, max_levels, verbose);
-            return;
-        }
-        Some(Commands::Doctor) => {
-            handle_doctor_command(&ignore_list, max_levels);
-            return;
-        }
-        None => {}
+    if let Some(Commands::Completions { shell }) = cli.subcommand {
+        let mut cmd = Cli::command();
+        let name = cmd.get_name().to_string();
+        generate(shell, &mut cmd, name, &mut io::stdout());
+        return;
     }
 
     // Handle --update flag
@@ -89,9 +86,6 @@ fn main() {
         }
     };
 
-    // Resolve alias (e.g., "t" -> "test")
-    let command = config.resolve_alias(&command);
-
     // Get current directory
     let current_dir = match env::current_dir() {
         Ok(dir) => dir,
@@ -102,61 +96,92 @@ fn main() {
     };
 
     // Search for runners
-    let (runners, working_dir) = match search_runners(
-        &current_dir,
-        max_levels,
-        &ignore_list,
-        verbose,
-    ) {
+    let search_result = search_runners(&current_dir, max_levels, &ignore_list, verbose);
+
+    // Prepare to inject custom commands
+    // Filter empty commands
+    let valid_config_commands: Option<std::collections::HashMap<String, String>> =
+        config.commands.as_ref().map(|cmds| {
+            cmds.iter()
+                .filter(|(_, cmd)| !cmd.trim().is_empty())
+                .map(|(k, v)| (k.clone(), v.clone()))
+                .collect()
+        });
+
+    let has_valid_commands = valid_config_commands
+        .as_ref()
+        .is_some_and(|c| !c.is_empty());
+
+    let (mut runners, working_dir) = match search_result {
         Ok(result) => result,
         Err(e) => {
-            output::error(&e.to_string());
-            eprintln!("Hint: Use --levels=N to increase search depth or check if you're in the right directory.");
-            process::exit(e.exit_code());
+            if has_valid_commands {
+                // If we have custom commands, we can proceed even without detected runners
+                (Vec::new(), current_dir.clone())
+            } else {
+                output::error(&e.to_string());
+                eprintln!("Hint: Use --levels=N to increase search depth or check if you're in the right directory.");
+                process::exit(e.exit_code());
+            }
         }
     };
 
-    // Check for conflicts and select runner
-    let runner = match check_conflicts(&runners, verbose) {
-        Ok(r) => r,
-        Err(e) => {
-            output::error(&e.to_string());
-            process::exit(e.exit_code());
-        }
-    };
-
-    // Check if script exists and suggest alternatives if not (for Node.js projects)
-    if runner.ecosystem == devrunner::detectors::Ecosystem::NodeJs {
-        if let Some(script_list) = scripts::get_scripts_for_runner(&runner, &working_dir) {
-            let script_names: Vec<String> =
-                script_list.scripts.iter().map(|s| s.name.clone()).collect();
-
-            if !devrunner::fuzzy::is_exact_match(&command, &script_names) {
-                use owo_colors::OwoColorize;
-
-                output::error(&format!("Script \"{}\" not found", command));
-                println!();
-                println!(
-                    "{}",
-                    format!("Available scripts: {}", script_names.join(", ")).dimmed()
-                );
-
-                if let Some(suggestion) = devrunner::fuzzy::suggest_script(&command, &script_names)
-                {
-                    println!();
-                    println!(
-                        "💡 Did you mean: {} {}",
-                        "devrunner".cyan(),
-                        suggestion.green().bold()
-                    );
+    // Inject custom commands from config
+    if let Some(valid_config_commands) = valid_config_commands {
+        if !valid_config_commands.is_empty() {
+            // Check if we already have a custom runner
+            if let Some(idx) = runners
+                .iter()
+                .position(|r| r.ecosystem == Ecosystem::Custom)
+            {
+                // Merge config commands into existing runner (local overrides global)
+                let mut merged_commands = valid_config_commands.clone();
+                if let Some(existing_cmds) = &runners[idx].custom_commands {
+                    merged_commands.extend(existing_cmds.clone());
                 }
-                process::exit(exit_codes::GENERIC_ERROR);
+
+                // Update the runner
+                let old_runner = &runners[idx];
+                let new_runner = DetectedRunner::with_custom_commands(
+                    &old_runner.name,
+                    &old_runner.detected_file,
+                    old_runner.ecosystem,
+                    old_runner.priority,
+                    Arc::new(UnknownValidator),
+                    merged_commands,
+                );
+                runners[idx] = new_runner;
+            } else {
+                // Create new runner
+                let new_runner = DetectedRunner::with_custom_commands(
+                    "custom",
+                    "config.toml",
+                    Ecosystem::Custom,
+                    0,
+                    Arc::new(UnknownValidator),
+                    valid_config_commands,
+                );
+                runners.push(new_runner);
+                // Sort by priority (0 first)
+                runners.sort_by_key(|r| r.priority);
             }
         }
     }
 
-    // Record start time for timing
-    let start_time = std::time::Instant::now();
+    // Check for conflicts and select runner based on command support
+    let runner = match check_conflicts(&runners, &working_dir, verbose) {
+        Ok(_) => match select_runner(&runners, &command, &working_dir, verbose) {
+            Ok(r) => r,
+            Err(e) => {
+                output::error(&e.to_string());
+                process::exit(e.exit_code());
+            }
+        },
+        Err(e) => {
+            output::error(&e.to_string());
+            process::exit(e.exit_code());
+        }
+    };
 
     // Execute the command
     let result = match execute(
@@ -175,35 +200,14 @@ fn main() {
         }
     };
 
-    // Show execution time if enabled
-    if config.get_show_timing() && !quiet && !cli.dry_run {
-        use owo_colors::OwoColorize;
-        let elapsed = start_time.elapsed();
-        let seconds = elapsed.as_secs_f64();
-
-        if seconds < 60.0 {
-            eprintln!("\n{} Completed in {:.2}s", "✓".green(), seconds);
-        } else {
-            let minutes = (seconds / 60.0).floor() as u64;
-            let remaining_secs = seconds % 60.0;
-            eprintln!(
-                "\n{} Completed in {}m {:.1}s",
-                "✓".green(),
-                minutes,
-                remaining_secs
-            );
-        }
-    }
-
-    // For dry run, always exit successfully
+    // For dry devrunner, always exit successfully
     if cli.dry_run {
         process::exit(exit_codes::SUCCESS);
     }
 
     // Spawn background update check (after command completes)
-    if config.get_auto_update() && !update::is_update_disabled() {
-        update::spawn_background_update();
-    }
+    // The function checks config internally and respects the throttle interval
+    update::spawn_background_update(&config);
 
     // Exit with the same code as the executed command
     let exit_code = result
@@ -211,335 +215,4 @@ fn main() {
         .code()
         .unwrap_or(exit_codes::GENERIC_ERROR);
     process::exit(exit_code);
-}
-
-/// Handle the `list` subcommand - show available scripts
-fn handle_list_command(ignore_list: &[String], max_levels: u8, verbose: bool) {
-    use owo_colors::OwoColorize;
-
-    let current_dir = match env::current_dir() {
-        Ok(dir) => dir,
-        Err(e) => {
-            output::error(&format!("Failed to get current directory: {}", e));
-            process::exit(exit_codes::GENERIC_ERROR);
-        }
-    };
-
-    // Find the project directory
-    let (runners, working_dir) =
-        match search_runners(&current_dir, max_levels, ignore_list, verbose) {
-            Ok(result) => result,
-            Err(e) => {
-                output::error(&e.to_string());
-                process::exit(e.exit_code());
-            }
-        };
-
-    if runners.is_empty() {
-        output::error("No runner detected in this project");
-        process::exit(exit_codes::RUNNER_NOT_FOUND);
-    }
-
-    let runner = match check_conflicts(&runners, verbose) {
-        Ok(r) => r,
-        Err(e) => {
-            output::error(&e.to_string());
-            process::exit(e.exit_code());
-        }
-    };
-
-    println!(
-        "📦 Detected: {} ({})",
-        runner.name.green(),
-        runner.detected_file.dimmed()
-    );
-    println!();
-
-    // Get scripts for this runner
-    if let Some(script_list) = scripts::get_scripts_for_runner(&runner, &working_dir) {
-        println!("{}", "Available scripts:".bold());
-
-        // Find the longest script name for alignment
-        let max_name_len = script_list
-            .scripts
-            .iter()
-            .map(|s| s.name.len())
-            .max()
-            .unwrap_or(0);
-
-        for script in &script_list.scripts {
-            println!(
-                "  {}{}  {}",
-                script.name.cyan(),
-                " ".repeat(max_name_len - script.name.len()),
-                script.command.dimmed()
-            );
-        }
-    } else {
-        println!("{}", "No scripts found for this project type.".dimmed());
-    }
-
-    process::exit(exit_codes::SUCCESS);
-}
-
-/// Handle the `why` subcommand - explain runner selection
-fn handle_why_command(ignore_list: &[String], max_levels: u8, verbose: bool) {
-    use devrunner::detectors::detect_all;
-    use owo_colors::OwoColorize;
-
-    let current_dir = match env::current_dir() {
-        Ok(dir) => dir,
-        Err(e) => {
-            output::error(&format!("Failed to get current directory: {}", e));
-            process::exit(exit_codes::GENERIC_ERROR);
-        }
-    };
-
-    // Search for all runners (without ignoring for comparison)
-    let mut search_dir = current_dir.clone();
-    let mut found_level = 0;
-    let mut all_runners = Vec::new();
-
-    for level in 0..=max_levels {
-        let runners = detect_all(&search_dir, &[]);
-        if !runners.is_empty() {
-            all_runners = runners;
-            found_level = level;
-            break;
-        }
-        if let Some(parent) = search_dir.parent() {
-            search_dir = parent.to_path_buf();
-        } else {
-            break;
-        }
-    }
-
-    if all_runners.is_empty() {
-        output::error("No runner detected in this project");
-        process::exit(exit_codes::RUNNER_NOT_FOUND);
-    }
-
-    // Get the selected runner (with ignore list applied)
-    let filtered_runners: Vec<_> = all_runners
-        .iter()
-        .filter(|r| !ignore_list.iter().any(|i| i.eq_ignore_ascii_case(&r.name)))
-        .cloned()
-        .collect();
-
-    println!("{}", "Runner Selection Analysis".bold().underline());
-    println!();
-
-    if filtered_runners.is_empty() {
-        println!("{}", "All detected runners were ignored!".red());
-        println!();
-        println!("{}", "Detected (but ignored):".bold());
-        for runner in &all_runners {
-            println!(
-                "  {} {} - {}",
-                "•".dimmed(),
-                runner.name,
-                runner.detected_file
-            );
-        }
-        process::exit(exit_codes::SUCCESS);
-    }
-
-    let selected = match check_conflicts(&filtered_runners, verbose) {
-        Ok(r) => r,
-        Err(e) => {
-            output::error(&e.to_string());
-            process::exit(e.exit_code());
-        }
-    };
-
-    {
-        println!("📦 {} {}", "Using:".bold(), selected.name.green().bold());
-        println!(
-            "   {} Found {} in {} (level {})",
-            "→".dimmed(),
-            selected.detected_file.cyan(),
-            search_dir.display(),
-            found_level
-        );
-        println!(
-            "   {} Priority: {} (lower = higher priority)",
-            "→".dimmed(),
-            selected.priority
-        );
-        println!();
-
-        // Show other candidates
-        if all_runners.len() > 1 {
-            println!("{}", "Other detected runners:".bold());
-            for runner in &all_runners {
-                if runner.name != selected.name || runner.detected_file != selected.detected_file {
-                    let status = if ignore_list
-                        .iter()
-                        .any(|i| i.eq_ignore_ascii_case(&runner.name))
-                    {
-                        "(ignored via --ignore)".red().to_string()
-                    } else {
-                        format!("(priority {})", runner.priority)
-                            .dimmed()
-                            .to_string()
-                    };
-                    println!(
-                        "  {} {} - {} {}",
-                        "•".dimmed(),
-                        runner.name,
-                        runner.detected_file,
-                        status
-                    );
-                }
-            }
-        }
-    }
-
-    process::exit(exit_codes::SUCCESS);
-}
-
-/// Handle the `doctor` subcommand - diagnose project setup
-fn handle_doctor_command(ignore_list: &[String], max_levels: u8) {
-    use devrunner::detectors::{detect_all, is_tool_installed};
-    use owo_colors::OwoColorize;
-
-    let current_dir = match env::current_dir() {
-        Ok(dir) => dir,
-        Err(e) => {
-            output::error(&format!("Failed to get current directory: {}", e));
-            process::exit(exit_codes::GENERIC_ERROR);
-        }
-    };
-
-    println!("{}", "🩺 Devrunner Project Diagnosis".bold().underline());
-    println!();
-
-    // Find project directory
-    let (runners, working_dir) = match search_runners(&current_dir, max_levels, ignore_list, false)
-    {
-        Ok(result) => result,
-        Err(_) => {
-            println!("{} No project detected", "❌".red());
-            process::exit(exit_codes::RUNNER_NOT_FOUND);
-        }
-    };
-
-    println!("{}", "Project Detection:".bold());
-    println!("  {} Project root: {}", "→".dimmed(), working_dir.display());
-    println!();
-
-    let selected_runner = match check_conflicts(&runners, false) {
-        Ok(r) => {
-            println!("{} {} ({})", "✓".green(), r.name, r.detected_file.dimmed());
-            Some(r)
-        }
-        Err(e) => {
-            println!("{} {}", "❌".red(), e.to_string().red());
-            None
-        }
-    };
-    println!();
-
-    // Check all runners and their tools
-    println!("{}", "Detected Runners:".bold());
-    let all_runners = detect_all(&working_dir, &[]);
-
-    for runner in &all_runners {
-        let installed = is_tool_installed(&runner.name);
-        let status_text = if installed {
-            let version = get_tool_version(&runner.name).unwrap_or_else(|| "installed".to_string());
-            format!("{}", version.dimmed())
-        } else {
-            format!("{}", "not installed".red())
-        };
-
-        if installed {
-            print!("  {} ", "✓".green());
-        } else {
-            print!("  {} ", "✗".red());
-        }
-        println!(
-            "{} ({}) - {}",
-            runner.name, runner.detected_file, status_text
-        );
-    }
-    println!();
-
-    // Check for conflicts
-    let mut has_conflicts = false;
-    let mut ecosystems: std::collections::HashMap<String, Vec<String>> =
-        std::collections::HashMap::new();
-
-    for runner in &all_runners {
-        ecosystems
-            .entry(runner.ecosystem.as_str().to_string())
-            .or_default()
-            .push(runner.name.clone());
-    }
-
-    println!("{}", "Conflict Analysis:".bold());
-    for (ecosystem, tools) in &ecosystems {
-        if tools.len() > 1 {
-            has_conflicts = true;
-            println!(
-                "  {} {} ecosystem has multiple lockfiles: {}",
-                "⚠".yellow(),
-                ecosystem,
-                tools.join(", ").yellow()
-            );
-        }
-    }
-
-    if !has_conflicts {
-        println!("  {} No lockfile conflicts detected", "✓".green());
-    }
-    println!();
-
-    // Script count
-    if let Some(selected) = selected_runner {
-        if let Some(script_list) = scripts::get_scripts_for_runner(&selected, &working_dir) {
-            println!(
-                "{} {} scripts available in {}",
-                "✓".green(),
-                script_list.scripts.len(),
-                script_list.source_file
-            );
-        }
-    }
-
-    process::exit(exit_codes::SUCCESS);
-}
-
-/// Try to get the version of a tool
-fn get_tool_version(tool: &str) -> Option<String> {
-    use std::process::Command;
-
-    let version_flag = match tool {
-        "npm" | "pnpm" | "yarn" | "bun" => "-v",
-        "cargo" | "rustc" => "--version",
-        "python" | "python3" => "--version",
-        "go" => "version",
-        "node" => "-v",
-        _ => "--version",
-    };
-
-    let output = Command::new(tool).arg(version_flag).output().ok()?;
-
-    if output.status.success() {
-        let version = String::from_utf8_lossy(&output.stdout);
-        let version = version.trim();
-        // Extract just the version number if possible
-        let version = version
-            .split_whitespace()
-            .find(|s| {
-                s.chars()
-                    .next()
-                    .map(|c| c.is_ascii_digit())
-                    .unwrap_or(false)
-            })
-            .unwrap_or(version);
-        Some(version.trim_start_matches('v').to_string())
-    } else {
-        None
-    }
 }

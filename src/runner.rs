@@ -1,6 +1,19 @@
-use crate::detectors::{detect_all, is_tool_installed, DetectedRunner, Ecosystem};
-use crate::error::RunError;
+// Copyright (C) 2025 Verseles
+//
+// This program is free software: you can redistribute it and/or modify
+// it under the terms of the GNU Affero General Public License as published
+// by the Free Software Foundation, version 3 of the License.
+//
+// This program is distributed in the hope that it will be useful,
+// but WITHOUT ANY WARRANTY; without even the implied warranty of
+// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+// GNU Affero General Public License for more details.
+
+use crate::detectors::{
+    detect_all, is_tool_installed, node, CommandSupport, DetectedRunner, Ecosystem,
+};
 use crate::output;
+use crate::RunError;
 use std::collections::HashMap;
 use std::path::{Path, PathBuf};
 use std::process::{Command, ExitStatus, Stdio};
@@ -20,7 +33,6 @@ pub fn search_runners(
     verbose: bool,
 ) -> Result<(Vec<DetectedRunner>, PathBuf), RunError> {
     let mut current_dir = start_dir.to_path_buf();
-    let mut deferred_node_fallback: Option<(Vec<DetectedRunner>, PathBuf)> = None;
 
     for level in 0..=max_levels {
         if verbose {
@@ -29,24 +41,7 @@ pub fn search_runners(
 
         let runners = detect_all(&current_dir, ignore_list);
         if !runners.is_empty() {
-            if is_node_manifest_only_detection(&runners) {
-                // In monorepos, leaf packages often have only package.json while
-                // the actual package manager lockfile is at workspace root.
-                if deferred_node_fallback.is_none() {
-                    deferred_node_fallback = Some((runners, current_dir.clone()));
-                }
-            } else if deferred_node_fallback.is_some() {
-                // If we deferred a node fallback and later found a node runner
-                // with stronger evidence (lockfile), prefer that.
-                if runners
-                    .iter()
-                    .any(|runner| runner.ecosystem == Ecosystem::NodeJs)
-                {
-                    return Ok((runners, current_dir));
-                }
-            } else {
-                return Ok((runners, current_dir));
-            }
+            return Ok((runners, current_dir));
         }
 
         // Move up one directory
@@ -57,29 +52,27 @@ pub fn search_runners(
         }
     }
 
-    if let Some(fallback) = deferred_node_fallback {
-        return Ok(fallback);
-    }
-
     Err(RunError::RunnerNotFound(max_levels))
 }
 
-fn is_node_manifest_only_detection(runners: &[DetectedRunner]) -> bool {
-    !runners.is_empty()
-        && runners.iter().all(|runner| {
-            runner.ecosystem == Ecosystem::NodeJs
-                && runner.name == "npm"
-                && runner.detected_file == "package.json"
-        })
-}
-
 /// Check for lockfile conflicts within the same ecosystem
+/// Uses Corepack (packageManager field) to resolve Node.js conflicts if available
 pub fn check_conflicts(
     runners: &[DetectedRunner],
+    working_dir: &Path,
     verbose: bool,
 ) -> Result<DetectedRunner, RunError> {
     if runners.is_empty() {
         return Err(RunError::RunnerNotFound(0));
+    }
+
+    // Priority 0 check for custom runners
+    // If a custom runner is detected, it should override conflicts
+    if let Some(custom_runner) = runners.iter().find(|r| r.ecosystem == Ecosystem::Custom) {
+        if verbose {
+            output::info("Using custom runner (highest priority)");
+        }
+        return Ok(custom_runner.clone());
     }
 
     if runners.len() == 1 {
@@ -97,7 +90,29 @@ pub fn check_conflicts(
 
     // Check for conflicts within ecosystems
     for (ecosystem, eco_runners) in &by_ecosystem {
-        if eco_runners.len() > 1 {
+        if eco_runners.len() > 1 && *ecosystem == Ecosystem::NodeJs {
+            // For Node.js ecosystem, try to use Corepack to resolve
+            if let Some(corepack_pm) = node::get_corepack_manager(working_dir) {
+                // Find the runner that matches the Corepack package manager
+                if let Some(runner) = eco_runners.iter().find(|r| r.name == corepack_pm) {
+                    if verbose {
+                        output::info(&format!(
+                            "Using {} (specified by packageManager in package.json)",
+                            corepack_pm
+                        ));
+                    }
+                    return Ok((*runner).clone());
+                } else {
+                    // Corepack specifies a PM but we don't have a matching lockfile
+                    if verbose {
+                        output::warning(&format!(
+                            "packageManager specifies '{}' but no matching lockfile found",
+                            corepack_pm
+                        ));
+                    }
+                }
+            }
+
             // Check which tools are installed
             let installed: Vec<&&DetectedRunner> = eco_runners
                 .iter()
@@ -144,8 +159,7 @@ pub fn check_conflicts(
                 let tools: Vec<&str> = installed.iter().map(|r| r.name.as_str()).collect();
 
                 return Err(RunError::LockfileConflict(format!(
-                    "Detected {} with multiple lockfiles ({}) and multiple tools installed ({}).\n\
-                     Action needed: Remove the outdated lockfile or use --ignore=<tool>",
+                    "Detected {} with multiple lockfiles ({}) and multiple tools installed ({}).\nAction needed: Remove the outdated lockfile or use --ignore=<tool>",
                     ecosystem.as_str(),
                     lockfiles.join(", "),
                     tools.join(", ")
@@ -158,6 +172,55 @@ pub fn check_conflicts(
     Ok(runners[0].clone())
 }
 
+pub fn select_runner(
+    runners: &[DetectedRunner],
+    command: &str,
+    working_dir: &Path,
+    verbose: bool,
+) -> Result<DetectedRunner, RunError> {
+    if runners.is_empty() {
+        return Err(RunError::RunnerNotFound(0));
+    }
+
+    let mut supported_runners: Vec<&DetectedRunner> = Vec::new();
+    let mut unknown_runners: Vec<&DetectedRunner> = Vec::new();
+
+    for runner in runners {
+        match runner.supports_command(command, working_dir) {
+            CommandSupport::Supported => {
+                if verbose {
+                    output::info(&format!("{} supports command '{}'", runner.name, command));
+                }
+                supported_runners.push(runner);
+            }
+            CommandSupport::NotSupported => {
+                if verbose {
+                    output::info(&format!(
+                        "{} does not support command '{}'",
+                        runner.name, command
+                    ));
+                }
+            }
+            CommandSupport::Unknown => {
+                unknown_runners.push(runner);
+            }
+        }
+    }
+
+    if let Some(runner) = supported_runners.first() {
+        return Ok((*runner).clone());
+    }
+
+    if let Some(runner) = unknown_runners.first() {
+        return Ok((*runner).clone());
+    }
+
+    Err(RunError::CommandNotSupported(
+        command.to_string(),
+        runners.iter().map(|r| r.name.clone()).collect(),
+    ))
+}
+
 /// Execute a command with the detected runner
 pub fn execute(
     runner: &DetectedRunner,
@@ -168,8 +231,9 @@ pub fn execute(
     verbose: bool,
     quiet: bool,
 ) -> Result<RunResult, RunError> {
-    // Check if the tool is installed (skip for dry-run)
-    if !dry_run && !is_tool_installed(&runner.name) {
+    // Check if the tool is installed (skip for dry-devrunner)
+    // Skip check for custom runners as they define their own commands
+    if !dry_run && runner.ecosystem != Ecosystem::Custom && !is_tool_installed(&runner.name) {
         return Err(RunError::ToolNotInstalled(format!(
             "{} is not installed. Please install it to continue.",
             runner.name
@@ -188,7 +252,7 @@ pub fn execute(
         if !quiet {
             println!("{}", cmd_string);
         }
-        // Return a fake success for dry run
+        // Return a fake success for dry devrunner
         return Ok(RunResult {
             exit_status: std::process::ExitStatus::default(),
             runner: runner.clone(),
@@ -223,6 +287,7 @@ pub fn execute(
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::RunError;
     use std::fs::File;
     use tempfile::tempdir;
 
@@ -268,54 +333,60 @@ mod tests {
     }
 
     #[test]
-    fn test_search_runners_monorepo_prefers_root_lockfile() {
-        let dir = tempdir().unwrap();
-        File::create(dir.path().join("package.json")).unwrap();
-        File::create(dir.path().join("pnpm-lock.yaml")).unwrap();
-
-        let subdir = dir.path().join("apps").join("web");
-        std::fs::create_dir_all(&subdir).unwrap();
-        File::create(subdir.join("package.json")).unwrap();
-
-        let (runners, found_dir) = search_runners(&subdir, 5, &[], false).unwrap();
-        assert_eq!(found_dir, dir.path());
-        assert_eq!(runners[0].name, "pnpm");
-    }
-
-    #[test]
-    fn test_search_runners_node_fallback_not_overridden_by_other_ecosystem() {
-        let dir = tempdir().unwrap();
-        File::create(dir.path().join("Cargo.toml")).unwrap();
-
-        let subdir = dir.path().join("web");
-        std::fs::create_dir_all(&subdir).unwrap();
-        File::create(subdir.join("package.json")).unwrap();
-
-        let (runners, found_dir) = search_runners(&subdir, 5, &[], false).unwrap();
-        assert_eq!(found_dir, subdir);
-        assert_eq!(runners[0].name, "npm");
-    }
-
-    #[test]
     fn test_check_conflicts_single_runner() {
+        let dir = tempdir().unwrap();
         let runners = vec![DetectedRunner::new(
             "npm",
             "package.json",
             Ecosystem::NodeJs,
             4,
         )];
-        let result = check_conflicts(&runners, false).unwrap();
+        let result = check_conflicts(&runners, dir.path(), false).unwrap();
         assert_eq!(result.name, "npm");
     }
 
     #[test]
     fn test_check_conflicts_different_ecosystems() {
+        let dir = tempdir().unwrap();
         let runners = vec![
             DetectedRunner::new("npm", "package.json", Ecosystem::NodeJs, 4),
             DetectedRunner::new("cargo", "Cargo.toml", Ecosystem::Rust, 9),
         ];
-        let result = check_conflicts(&runners, false).unwrap();
+        let result = check_conflicts(&runners, dir.path(), false).unwrap();
         // Should return highest priority
         assert_eq!(result.name, "npm");
+    }
+
+    #[test]
+    fn test_check_conflicts_corepack_resolves() {
+        use std::io::Write;
+
+        let dir = tempdir().unwrap();
+        // Create package.json with packageManager specifying pnpm
+        let mut file = File::create(dir.path().join("package.json")).unwrap();
+        writeln!(file, r#"{{"packageManager": "pnpm@9.0.0"}}"#).unwrap();
+
+        let runners = vec![
+            DetectedRunner::new("yarn", "yarn.lock", Ecosystem::NodeJs, 3),
+            DetectedRunner::new("pnpm", "pnpm-lock.yaml", Ecosystem::NodeJs, 2),
+            DetectedRunner::new("npm", "package-lock.json", Ecosystem::NodeJs, 4),
+        ];
+
+        // Corepack should resolve to pnpm
+        let result = check_conflicts(&runners, dir.path(), false).unwrap();
+        assert_eq!(result.name, "pnpm");
+    }
+
+    #[test]
+    fn test_check_conflicts_non_nodejs_ecosystem() {
+        let dir = tempdir().unwrap();
+        let runners = vec![
+            DetectedRunner::new("bundler", "Gemfile.lock", Ecosystem::Ruby, 13),
+            DetectedRunner::new("rake", "Rakefile", Ecosystem::Ruby, 14),
+        ];
+
+        // Should not throw a LockfileConflict for non-NodeJs ecosystems
+        let result = check_conflicts(&runners, dir.path(), false).unwrap();
+        assert_eq!(result.name, "bundler"); // Higher priority wins
     }
 }

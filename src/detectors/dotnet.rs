@@ -1,10 +1,63 @@
-use super::{DetectedRunner, Ecosystem};
+// Copyright (C) 2025 Verseles
+//
+// This program is free software: you can redistribute it and/or modify
+// it under the terms of the GNU Affero General Public License as published
+// by the Free Software Foundation, version 3 of the License.
+//
+// This program is distributed in the hope that it will be useful,
+// but WITHOUT ANY WARRANTY; without even the implied warranty of
+// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+// GNU Affero General Public License for more details.
+
+use super::{CommandSupport, CommandValidator, DetectedRunner, Ecosystem};
 use std::path::Path;
+use std::sync::Arc;
+
+pub struct DotNetValidator;
+
+impl CommandValidator for DotNetValidator {
+    fn supports_command(&self, _working_dir: &Path, command: &str) -> CommandSupport {
+        static DOTNET_BUILTIN: &[&str] = &[
+            "build",
+            "clean",
+            "test",
+            "devrunner",
+            "publish",
+            "pack",
+            "restore",
+            "new",
+            "add",
+            "remove",
+            "list",
+            "nuget",
+            "tool",
+            "workload",
+            "watch",
+            "format",
+            "help",
+            "sln",
+            "store",
+            "msbuild",
+            "vstest",
+            "dev-certs",
+            "fsi",
+            "user-secrets",
+            "ef",
+        ];
+
+        if DOTNET_BUILTIN.contains(&command) {
+            return CommandSupport::Supported;
+        }
+
+        CommandSupport::NotSupported
+    }
+}
 
 /// Detect .NET projects
 /// Priority: 17
 pub fn detect(dir: &Path) -> Vec<DetectedRunner> {
     let mut runners = Vec::new();
+    let validator: Arc<dyn CommandValidator> = Arc::new(DotNetValidator);
 
     // Check for .csproj or .sln files
     if let Ok(entries) = std::fs::read_dir(dir) {
@@ -13,11 +66,12 @@ pub fn detect(dir: &Path) -> Vec<DetectedRunner> {
             if let Some(ext) = path.extension() {
                 if ext == "csproj" || ext == "sln" {
                     let file_name = path.file_name().unwrap().to_string_lossy().to_string();
-                    runners.push(DetectedRunner::new(
+                    runners.push(DetectedRunner::with_validator(
                         "dotnet",
                         &file_name,
                         Ecosystem::DotNet,
                         17,
+                        Arc::clone(&validator),
                     ));
                     break; // Only detect once
                 }

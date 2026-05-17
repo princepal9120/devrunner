@@ -1,21 +1,24 @@
+// Copyright (C) 2025 Verseles
+//
+// This program is free software: you can redistribute it and/or modify
+// it under the terms of the GNU Affero General Public License as published
+// by the Free Software Foundation, version 3 of the License.
+
 #![allow(deprecated)]
 
 use assert_cmd::Command;
 use predicates::prelude::*;
 use std::fs::{self, File};
-use std::path::PathBuf;
+use std::io::Write;
 use tempfile::tempdir;
 
 fn run_cmd() -> Command {
     Command::cargo_bin("devrunner").unwrap()
 }
 
-fn fixture_path(name: &str) -> PathBuf {
-    PathBuf::from(env!("CARGO_MANIFEST_DIR"))
-        .join("tests")
-        .join("fixtures")
-        .join(name)
-}
+// ============================================================================
+// Basic CLI tests
+// ============================================================================
 
 #[test]
 fn test_help() {
@@ -36,6 +39,14 @@ fn test_version() {
 }
 
 #[test]
+fn test_no_command_shows_help() {
+    run_cmd()
+        .assert()
+        .success()
+        .stdout(predicate::str::contains("Usage:"));
+}
+
+#[test]
 fn test_no_runner_found() {
     let dir = tempdir().unwrap();
 
@@ -48,29 +59,45 @@ fn test_no_runner_found() {
 }
 
 #[test]
+fn test_no_runner_found_exit_code() {
+    let dir = tempdir().unwrap();
+
+    run_cmd()
+        .current_dir(dir.path())
+        .arg("test")
+        .assert()
+        .code(2);
+}
+
+// ============================================================================
+// Node.js ecosystem detection
+// ============================================================================
+
+#[test]
 fn test_dry_run_npm() {
     let dir = tempdir().unwrap();
     File::create(dir.path().join("package.json")).unwrap();
 
     run_cmd()
         .current_dir(dir.path())
-        .args(["test", "--dry-run"])
+        .args(["test", "--dry-devrunner"])
         .assert()
         .success()
-        .stdout(predicate::str::contains("npm run test"));
+        .stdout(predicate::str::contains("npm test"));
 }
 
 #[test]
-fn test_dry_run_cargo() {
+fn test_dry_run_npm_with_lockfile() {
     let dir = tempdir().unwrap();
-    File::create(dir.path().join("Cargo.toml")).unwrap();
+    File::create(dir.path().join("package.json")).unwrap();
+    File::create(dir.path().join("package-lock.json")).unwrap();
 
     run_cmd()
         .current_dir(dir.path())
-        .args(["build", "--dry-run"])
+        .args(["test", "--dry-devrunner"])
         .assert()
         .success()
-        .stdout(predicate::str::contains("cargo build"));
+        .stdout(predicate::str::contains("npm test"));
 }
 
 #[test]
@@ -81,10 +108,10 @@ fn test_dry_run_pnpm() {
 
     run_cmd()
         .current_dir(dir.path())
-        .args(["test", "--dry-run"])
+        .args(["test", "--dry-devrunner"])
         .assert()
         .success()
-        .stdout(predicate::str::contains("pnpm run test"));
+        .stdout(predicate::str::contains("pnpm test"));
 }
 
 #[test]
@@ -95,25 +122,43 @@ fn test_dry_run_yarn() {
 
     run_cmd()
         .current_dir(dir.path())
-        .args(["test", "--dry-run"])
+        .args(["test", "--dry-devrunner"])
         .assert()
         .success()
-        .stdout(predicate::str::contains("yarn run test"));
+        .stdout(predicate::str::contains("yarn test"));
 }
 
 #[test]
-fn test_dry_run_bun() {
+fn test_dry_run_bun_lockb() {
     let dir = tempdir().unwrap();
     File::create(dir.path().join("package.json")).unwrap();
     File::create(dir.path().join("bun.lockb")).unwrap();
 
     run_cmd()
         .current_dir(dir.path())
-        .args(["test", "--dry-run"])
+        .args(["test", "--dry-devrunner"])
         .assert()
         .success()
-        .stdout(predicate::str::contains("bun run test"));
+        .stdout(predicate::str::contains("bun test"));
 }
+
+#[test]
+fn test_dry_run_bun_lock() {
+    let dir = tempdir().unwrap();
+    File::create(dir.path().join("package.json")).unwrap();
+    File::create(dir.path().join("bun.lock")).unwrap();
+
+    run_cmd()
+        .current_dir(dir.path())
+        .args(["test", "--dry-devrunner"])
+        .assert()
+        .success()
+        .stdout(predicate::str::contains("bun test"));
+}
+
+// ============================================================================
+// Python ecosystem detection
+// ============================================================================
 
 #[test]
 fn test_dry_run_poetry() {
@@ -123,11 +168,442 @@ fn test_dry_run_poetry() {
 
     run_cmd()
         .current_dir(dir.path())
-        .args(["test", "--dry-run"])
+        .args(["test", "--dry-devrunner"])
         .assert()
         .success()
-        .stdout(predicate::str::contains("poetry run test"));
+        .stdout(predicate::str::contains("poetry devrunner test"));
 }
+
+#[test]
+fn test_dry_run_uv() {
+    let dir = tempdir().unwrap();
+    File::create(dir.path().join("pyproject.toml")).unwrap();
+    File::create(dir.path().join("uv.lock")).unwrap();
+
+    run_cmd()
+        .current_dir(dir.path())
+        .args(["test", "--dry-devrunner"])
+        .assert()
+        .success()
+        .stdout(predicate::str::contains("uv devrunner test"));
+}
+
+#[test]
+fn test_dry_run_pipenv() {
+    let dir = tempdir().unwrap();
+    File::create(dir.path().join("Pipfile")).unwrap();
+    File::create(dir.path().join("Pipfile.lock")).unwrap();
+
+    run_cmd()
+        .current_dir(dir.path())
+        .args(["test", "--dry-devrunner"])
+        .assert()
+        .success()
+        .stdout(predicate::str::contains("pipenv devrunner test"));
+}
+
+#[test]
+fn test_dry_run_pip() {
+    let dir = tempdir().unwrap();
+    File::create(dir.path().join("requirements.txt")).unwrap();
+
+    run_cmd()
+        .current_dir(dir.path())
+        .args(["pytest", "--dry-devrunner"])
+        .assert()
+        .success()
+        .stdout(predicate::str::contains("python -m pytest"));
+}
+
+// ============================================================================
+// Rust ecosystem detection
+// ============================================================================
+
+#[test]
+fn test_dry_run_cargo() {
+    let dir = tempdir().unwrap();
+    File::create(dir.path().join("Cargo.toml")).unwrap();
+
+    run_cmd()
+        .current_dir(dir.path())
+        .args(["build", "--dry-devrunner"])
+        .assert()
+        .success()
+        .stdout(predicate::str::contains("cargo build"));
+}
+
+#[test]
+fn test_dry_run_cargo_test() {
+    let dir = tempdir().unwrap();
+    File::create(dir.path().join("Cargo.toml")).unwrap();
+
+    run_cmd()
+        .current_dir(dir.path())
+        .args(["test", "--dry-devrunner"])
+        .assert()
+        .success()
+        .stdout(predicate::str::contains("cargo test"));
+}
+
+// ============================================================================
+// PHP ecosystem detection
+// ============================================================================
+
+#[test]
+fn test_dry_run_composer() {
+    let dir = tempdir().unwrap();
+    File::create(dir.path().join("composer.json")).unwrap();
+    File::create(dir.path().join("composer.lock")).unwrap();
+
+    run_cmd()
+        .current_dir(dir.path())
+        .args(["test", "--dry-devrunner"])
+        .assert()
+        .success()
+        .stdout(predicate::str::contains("composer devrunner test"));
+}
+
+// ============================================================================
+// Go ecosystem detection
+// ============================================================================
+
+#[test]
+fn test_dry_run_task() {
+    let dir = tempdir().unwrap();
+    File::create(dir.path().join("Taskfile.yml")).unwrap();
+
+    run_cmd()
+        .current_dir(dir.path())
+        .args(["build", "--dry-devrunner"])
+        .assert()
+        .success()
+        .stdout(predicate::str::contains("task build"));
+}
+
+#[test]
+fn test_dry_run_task_yaml() {
+    let dir = tempdir().unwrap();
+    File::create(dir.path().join("Taskfile.yaml")).unwrap();
+
+    run_cmd()
+        .current_dir(dir.path())
+        .args(["build", "--dry-devrunner"])
+        .assert()
+        .success()
+        .stdout(predicate::str::contains("task build"));
+}
+
+#[test]
+fn test_dry_run_go() {
+    let dir = tempdir().unwrap();
+    File::create(dir.path().join("go.mod")).unwrap();
+
+    run_cmd()
+        .current_dir(dir.path())
+        .args(["build", "--dry-devrunner"])
+        .assert()
+        .success()
+        .stdout(predicate::str::contains("go build"));
+}
+
+#[test]
+fn test_dry_run_go_run_path() {
+    let dir = tempdir().unwrap();
+    File::create(dir.path().join("go.mod")).unwrap();
+
+    run_cmd()
+        .current_dir(dir.path())
+        .args(["./cmd/main.go", "--dry-devrunner"])
+        .assert()
+        .success()
+        .stdout(predicate::str::contains("go devrunner ./cmd/main.go"));
+}
+
+// ============================================================================
+// Just command runner detection
+// ============================================================================
+
+#[test]
+fn test_dry_run_just() {
+    let dir = tempdir().unwrap();
+    let mut file = File::create(dir.path().join("justfile")).unwrap();
+    writeln!(file, "build:\n    cargo build").unwrap();
+
+    run_cmd()
+        .current_dir(dir.path())
+        .args(["build", "--dry-devrunner"])
+        .assert()
+        .success()
+        .stdout(predicate::str::contains("just build"));
+}
+
+#[test]
+fn test_dry_run_just_capitalized() {
+    let dir = tempdir().unwrap();
+    let mut file = File::create(dir.path().join("Justfile")).unwrap();
+    writeln!(file, "test:\n    cargo test").unwrap();
+
+    run_cmd()
+        .current_dir(dir.path())
+        .args(["test", "--dry-devrunner"])
+        .assert()
+        .success()
+        .stdout(predicate::str::contains("just test"));
+}
+
+// ============================================================================
+// Monorepo orchestration tools detection
+// ============================================================================
+
+#[test]
+fn test_dry_run_nx() {
+    let dir = tempdir().unwrap();
+    File::create(dir.path().join("nx.json")).unwrap();
+    File::create(dir.path().join("package.json")).unwrap();
+
+    run_cmd()
+        .current_dir(dir.path())
+        .args(["build", "--dry-devrunner"])
+        .assert()
+        .success()
+        .stdout(predicate::str::contains("nx build"));
+}
+
+#[test]
+fn test_dry_run_turbo() {
+    let dir = tempdir().unwrap();
+    File::create(dir.path().join("turbo.json")).unwrap();
+    File::create(dir.path().join("package.json")).unwrap();
+
+    run_cmd()
+        .current_dir(dir.path())
+        .args(["build", "--dry-devrunner"])
+        .assert()
+        .success()
+        .stdout(predicate::str::contains("turbo devrunner build"));
+}
+
+#[test]
+fn test_dry_run_lerna() {
+    let dir = tempdir().unwrap();
+    File::create(dir.path().join("lerna.json")).unwrap();
+    File::create(dir.path().join("package.json")).unwrap();
+
+    // Use --ignore=npm because CI environments have both lerna and npm installed
+    run_cmd()
+        .current_dir(dir.path())
+        .args(["test", "--dry-devrunner", "--ignore=npm"])
+        .assert()
+        .success()
+        .stdout(predicate::str::contains("lerna devrunner test"));
+}
+
+#[test]
+fn test_monorepo_priority_over_npm() {
+    let dir = tempdir().unwrap();
+    File::create(dir.path().join("turbo.json")).unwrap();
+    File::create(dir.path().join("package.json")).unwrap();
+    File::create(dir.path().join("package-lock.json")).unwrap();
+
+    // turbo (priority 0) should be preferred over npm (priority 4)
+    run_cmd()
+        .current_dir(dir.path())
+        .args(["build", "--dry-devrunner"])
+        .assert()
+        .success()
+        .stdout(predicate::str::contains("turbo devrunner build"));
+}
+
+// ============================================================================
+// Ruby ecosystem detection
+// ============================================================================
+
+#[test]
+fn test_dry_run_bundler() {
+    let dir = tempdir().unwrap();
+    File::create(dir.path().join("Gemfile")).unwrap();
+    File::create(dir.path().join("Gemfile.lock")).unwrap();
+
+    run_cmd()
+        .current_dir(dir.path())
+        .args(["rspec", "--dry-devrunner"])
+        .assert()
+        .success()
+        .stdout(predicate::str::contains("bundle exec rspec"));
+}
+
+#[test]
+fn test_dry_run_rake() {
+    let dir = tempdir().unwrap();
+    File::create(dir.path().join("Rakefile")).unwrap();
+
+    run_cmd()
+        .current_dir(dir.path())
+        .args(["test", "--dry-devrunner"])
+        .assert()
+        .success()
+        .stdout(predicate::str::contains("rake test"));
+}
+
+// ============================================================================
+// Java ecosystem detection
+// ============================================================================
+
+#[test]
+fn test_dry_run_gradle() {
+    let dir = tempdir().unwrap();
+    File::create(dir.path().join("build.gradle")).unwrap();
+
+    run_cmd()
+        .current_dir(dir.path())
+        .args(["build", "--dry-devrunner"])
+        .assert()
+        .success()
+        .stdout(predicate::str::contains("gradle build"));
+}
+
+#[test]
+fn test_dry_run_gradle_kts() {
+    let dir = tempdir().unwrap();
+    File::create(dir.path().join("build.gradle.kts")).unwrap();
+
+    run_cmd()
+        .current_dir(dir.path())
+        .args(["build", "--dry-devrunner"])
+        .assert()
+        .success()
+        .stdout(predicate::str::contains("gradle build"));
+}
+
+#[test]
+fn test_dry_run_maven() {
+    let dir = tempdir().unwrap();
+    File::create(dir.path().join("pom.xml")).unwrap();
+
+    run_cmd()
+        .current_dir(dir.path())
+        .args(["compile", "--dry-devrunner"])
+        .assert()
+        .success()
+        .stdout(predicate::str::contains("mvn compile"));
+}
+
+// ============================================================================
+// .NET ecosystem detection
+// ============================================================================
+
+#[test]
+fn test_dry_run_dotnet_csproj() {
+    let dir = tempdir().unwrap();
+    File::create(dir.path().join("Test.csproj")).unwrap();
+
+    run_cmd()
+        .current_dir(dir.path())
+        .args(["build", "--dry-devrunner"])
+        .assert()
+        .success()
+        .stdout(predicate::str::contains("dotnet build"));
+}
+
+#[test]
+fn test_dry_run_dotnet_sln() {
+    let dir = tempdir().unwrap();
+    File::create(dir.path().join("Test.sln")).unwrap();
+
+    run_cmd()
+        .current_dir(dir.path())
+        .args(["build", "--dry-devrunner"])
+        .assert()
+        .success()
+        .stdout(predicate::str::contains("dotnet build"));
+}
+
+// ============================================================================
+// Elixir ecosystem detection
+// ============================================================================
+
+#[test]
+fn test_dry_run_mix() {
+    let dir = tempdir().unwrap();
+    File::create(dir.path().join("mix.exs")).unwrap();
+
+    run_cmd()
+        .current_dir(dir.path())
+        .args(["test", "--dry-devrunner"])
+        .assert()
+        .success()
+        .stdout(predicate::str::contains("mix test"));
+}
+
+// ============================================================================
+// Swift ecosystem detection
+// ============================================================================
+
+#[test]
+fn test_dry_run_swift() {
+    let dir = tempdir().unwrap();
+    File::create(dir.path().join("Package.swift")).unwrap();
+
+    run_cmd()
+        .current_dir(dir.path())
+        .args(["MyApp", "--dry-devrunner"])
+        .assert()
+        .success()
+        .stdout(predicate::str::contains("swift devrunner MyApp"));
+}
+
+// ============================================================================
+// Zig ecosystem detection
+// ============================================================================
+
+#[test]
+fn test_dry_run_zig() {
+    let dir = tempdir().unwrap();
+    File::create(dir.path().join("build.zig")).unwrap();
+
+    run_cmd()
+        .current_dir(dir.path())
+        .args(["test", "--dry-devrunner"])
+        .assert()
+        .success()
+        .stdout(predicate::str::contains("zig build test"));
+}
+
+// ============================================================================
+// Make detection
+// ============================================================================
+
+#[test]
+fn test_dry_run_makefile() {
+    let dir = tempdir().unwrap();
+    let mut file = File::create(dir.path().join("Makefile")).unwrap();
+    writeln!(file, "build:\n\t@echo building").unwrap();
+
+    run_cmd()
+        .current_dir(dir.path())
+        .args(["build", "--dry-devrunner"])
+        .assert()
+        .success()
+        .stdout(predicate::str::contains("make build"));
+}
+
+#[test]
+fn test_dry_run_makefile_lowercase() {
+    let dir = tempdir().unwrap();
+    let mut file = File::create(dir.path().join("makefile")).unwrap();
+    writeln!(file, "build:\n\t@echo building").unwrap();
+
+    run_cmd()
+        .current_dir(dir.path())
+        .args(["build", "--dry-devrunner"])
+        .assert()
+        .success()
+        .stdout(predicate::str::contains("make build"));
+}
+
+// ============================================================================
+// CLI flag tests
+// ============================================================================
 
 #[test]
 fn test_ignore_flag() {
@@ -136,11 +612,55 @@ fn test_ignore_flag() {
 
     run_cmd()
         .current_dir(dir.path())
-        .args(["test", "--ignore=npm", "--dry-run"])
+        .args(["test", "--ignore=npm", "--dry-devrunner"])
         .assert()
         .failure()
         .stderr(predicate::str::contains("No runner found"));
 }
+
+#[test]
+fn test_ignore_comma_separated() {
+    let dir = tempdir().unwrap();
+    File::create(dir.path().join("package.json")).unwrap();
+    File::create(dir.path().join("Cargo.toml")).unwrap();
+
+    run_cmd()
+        .current_dir(dir.path())
+        .args(["test", "--ignore=npm,cargo", "--dry-devrunner"])
+        .assert()
+        .failure()
+        .stderr(predicate::str::contains("No runner found"));
+}
+
+#[test]
+fn test_ignore_multiple_flags() {
+    let dir = tempdir().unwrap();
+    File::create(dir.path().join("package.json")).unwrap();
+
+    run_cmd()
+        .current_dir(dir.path())
+        .args(["test", "--ignore", "npm", "--ignore", "yarn", "--dry-devrunner"])
+        .assert()
+        .failure()
+        .stderr(predicate::str::contains("No runner found"));
+}
+
+#[test]
+fn test_ignore_case_insensitive() {
+    let dir = tempdir().unwrap();
+    File::create(dir.path().join("package.json")).unwrap();
+
+    run_cmd()
+        .current_dir(dir.path())
+        .args(["test", "--ignore=NPM", "--dry-devrunner"])
+        .assert()
+        .failure()
+        .stderr(predicate::str::contains("No runner found"));
+}
+
+// ============================================================================
+// Recursive search tests
+// ============================================================================
 
 #[test]
 fn test_recursive_search() {
@@ -152,70 +672,79 @@ fn test_recursive_search() {
 
     run_cmd()
         .current_dir(&subdir)
-        .args(["test", "--dry-run"])
+        .args(["test", "--dry-devrunner"])
         .assert()
         .success()
-        .stdout(predicate::str::contains("npm run test"));
+        .stdout(predicate::str::contains("npm test"));
 }
 
 #[test]
-fn test_levels_limit() {
+fn test_recursive_search_3_levels() {
     let dir = tempdir().unwrap();
     File::create(dir.path().join("package.json")).unwrap();
 
-    let deep_subdir = dir.path().join("a").join("b").join("c").join("d");
-    fs::create_dir_all(&deep_subdir).unwrap();
+    let subdir = dir.path().join("a").join("b").join("c");
+    fs::create_dir_all(&subdir).unwrap();
 
-    // With levels=0, should not find it
     run_cmd()
-        .current_dir(&deep_subdir)
-        .args(["test", "--levels=0"])
-        .assert()
-        .failure()
-        .stderr(predicate::str::contains("No runner found"));
-
-    // With levels=5, should find it
-    run_cmd()
-        .current_dir(&deep_subdir)
-        .args(["test", "--levels=5", "--dry-run"])
+        .current_dir(&subdir)
+        .args(["test", "--dry-devrunner"])
         .assert()
         .success()
-        .stdout(predicate::str::contains("npm run test"));
+        .stdout(predicate::str::contains("npm test"));
 }
 
 #[test]
-fn test_levels_from_local_config() {
+fn test_levels_limit_zero() {
     let dir = tempdir().unwrap();
     File::create(dir.path().join("package.json")).unwrap();
 
-    let deep_subdir = dir.path().join("a").join("b").join("c").join("d");
-    fs::create_dir_all(&deep_subdir).unwrap();
-    fs::write(deep_subdir.join("run.toml"), "max_levels = 5\n").unwrap();
+    let subdir = dir.path().join("src");
+    fs::create_dir_all(&subdir).unwrap();
 
     run_cmd()
-        .current_dir(&deep_subdir)
-        .args(["test", "--dry-run"])
-        .assert()
-        .success()
-        .stdout(predicate::str::contains("npm run test"));
-}
-
-#[test]
-fn test_cli_levels_override_local_config() {
-    let dir = tempdir().unwrap();
-    File::create(dir.path().join("package.json")).unwrap();
-
-    let deep_subdir = dir.path().join("a").join("b").join("c").join("d");
-    fs::create_dir_all(&deep_subdir).unwrap();
-    fs::write(deep_subdir.join("run.toml"), "max_levels = 5\n").unwrap();
-
-    run_cmd()
-        .current_dir(&deep_subdir)
+        .current_dir(&subdir)
         .args(["test", "--levels=0"])
         .assert()
         .failure()
         .stderr(predicate::str::contains("No runner found"));
 }
+
+#[test]
+fn test_levels_limit_exceeded() {
+    let dir = tempdir().unwrap();
+    File::create(dir.path().join("package.json")).unwrap();
+
+    let deep_subdir = dir.path().join("a").join("b").join("c").join("d");
+    fs::create_dir_all(&deep_subdir).unwrap();
+
+    run_cmd()
+        .current_dir(&deep_subdir)
+        .args(["test", "--levels=3"])
+        .assert()
+        .failure()
+        .stderr(predicate::str::contains("No runner found"));
+}
+
+#[test]
+fn test_levels_limit_sufficient() {
+    let dir = tempdir().unwrap();
+    File::create(dir.path().join("package.json")).unwrap();
+
+    let deep_subdir = dir.path().join("a").join("b").join("c").join("d");
+    fs::create_dir_all(&deep_subdir).unwrap();
+
+    run_cmd()
+        .current_dir(&deep_subdir)
+        .args(["test", "--levels=5", "--dry-devrunner"])
+        .assert()
+        .success()
+        .stdout(predicate::str::contains("npm test"));
+}
+
+// ============================================================================
+// Extra arguments tests
+// ============================================================================
 
 #[test]
 fn test_extra_args() {
@@ -224,13 +753,28 @@ fn test_extra_args() {
 
     run_cmd()
         .current_dir(dir.path())
-        .args(["test", "--dry-run", "--", "--coverage", "--verbose"])
+        .args(["test", "--dry-devrunner", "--", "--coverage", "--verbose"])
         .assert()
         .success()
-        .stdout(predicate::str::contains(
-            "npm run test --coverage --verbose",
-        ));
+        .stdout(predicate::str::contains("npm test --coverage --verbose"));
 }
+
+#[test]
+fn test_extra_args_with_equals() {
+    let dir = tempdir().unwrap();
+    File::create(dir.path().join("package.json")).unwrap();
+
+    run_cmd()
+        .current_dir(dir.path())
+        .args(["test", "--dry-devrunner", "--", "--reporter=json"])
+        .assert()
+        .success()
+        .stdout(predicate::str::contains("npm test --reporter=json"));
+}
+
+// ============================================================================
+// Verbose and quiet mode tests
+// ============================================================================
 
 #[test]
 fn test_verbose_mode() {
@@ -239,11 +783,28 @@ fn test_verbose_mode() {
 
     run_cmd()
         .current_dir(dir.path())
-        .args(["test", "--dry-run", "--verbose"])
+        .args(["test", "--dry-devrunner", "--verbose"])
         .assert()
         .success()
         .stderr(predicate::str::contains("Detected"));
 }
+
+#[test]
+fn test_quiet_mode_suppresses_executing() {
+    let dir = tempdir().unwrap();
+    File::create(dir.path().join("package.json")).unwrap();
+
+    run_cmd()
+        .current_dir(dir.path())
+        .args(["test", "--dry-devrunner", "--quiet"])
+        .assert()
+        .success()
+        .stderr(predicate::str::is_empty());
+}
+
+// ============================================================================
+// Shell completions tests
+// ============================================================================
 
 #[test]
 fn test_completions_bash() {
@@ -251,7 +812,7 @@ fn test_completions_bash() {
         .args(["completions", "bash"])
         .assert()
         .success()
-        .stdout(predicate::str::contains("_devrunner"));
+        .stdout(predicate::str::contains("_run"));
 }
 
 #[test]
@@ -281,120 +842,151 @@ fn test_completions_powershell() {
         .stdout(predicate::str::contains("Register-ArgumentCompleter"));
 }
 
+// ============================================================================
+// Cross-ecosystem priority tests
+// ============================================================================
+
 #[test]
-fn test_makefile_detection() {
+fn test_priority_nodejs_over_make() {
     let dir = tempdir().unwrap();
+    File::create(dir.path().join("package.json")).unwrap();
     File::create(dir.path().join("Makefile")).unwrap();
 
     run_cmd()
         .current_dir(dir.path())
-        .args(["build", "--dry-run"])
+        .args(["test", "--dry-devrunner"])
         .assert()
         .success()
-        .stdout(predicate::str::contains("make build"));
+        .stdout(predicate::str::contains("npm test"));
 }
 
 #[test]
-fn test_gradle_detection() {
+fn test_priority_cargo_over_make() {
     let dir = tempdir().unwrap();
-    File::create(dir.path().join("build.gradle")).unwrap();
+    File::create(dir.path().join("Cargo.toml")).unwrap();
+    File::create(dir.path().join("Makefile")).unwrap();
 
     run_cmd()
         .current_dir(dir.path())
-        .args(["build", "--dry-run"])
+        .args(["build", "--dry-devrunner"])
         .assert()
         .success()
-        .stdout(predicate::str::contains("gradle build"));
+        .stdout(predicate::str::contains("cargo build"));
 }
 
 #[test]
-fn test_maven_detection() {
+fn test_priority_python_over_make() {
     let dir = tempdir().unwrap();
-    File::create(dir.path().join("pom.xml")).unwrap();
+    File::create(dir.path().join("requirements.txt")).unwrap();
+    File::create(dir.path().join("Makefile")).unwrap();
 
     run_cmd()
         .current_dir(dir.path())
-        .args(["compile", "--dry-run"])
+        .args(["pytest", "--dry-devrunner"])
         .assert()
         .success()
-        .stdout(predicate::str::contains("mvn compile"));
+        .stdout(predicate::str::contains("python -m pytest"));
 }
 
 #[test]
-fn test_mix_detection() {
+fn test_priority_mix_over_make() {
     let dir = tempdir().unwrap();
     File::create(dir.path().join("mix.exs")).unwrap();
+    File::create(dir.path().join("Makefile")).unwrap();
 
     run_cmd()
         .current_dir(dir.path())
-        .args(["test", "--dry-run"])
+        .args(["test", "--dry-devrunner"])
         .assert()
         .success()
         .stdout(predicate::str::contains("mix test"));
 }
 
-#[test]
-fn test_list_subcommand_with_fixture() {
-    run_cmd()
-        .current_dir(fixture_path("node-npm"))
-        .arg("list")
-        .assert()
-        .success()
-        .stdout(predicate::str::contains("Available scripts"));
-}
+// ============================================================================
+// Config file tests
+// ============================================================================
 
 #[test]
-fn test_why_subcommand_with_fixture() {
-    run_cmd()
-        .current_dir(fixture_path("node-npm"))
-        .arg("why")
-        .assert()
-        .success()
-        .stdout(predicate::str::contains("Runner Selection Analysis"));
-}
-
-#[test]
-fn test_doctor_subcommand_with_fixture() {
-    run_cmd()
-        .current_dir(fixture_path("node-npm"))
-        .arg("doctor")
-        .assert()
-        .success()
-        .stdout(predicate::str::contains("Project Detection"));
-}
-
-#[test]
-fn test_monorepo_prefers_workspace_lockfile_runner() {
+fn test_local_config_ignore() {
     let dir = tempdir().unwrap();
     File::create(dir.path().join("package.json")).unwrap();
-    File::create(dir.path().join("pnpm-lock.yaml")).unwrap();
-    File::create(dir.path().join("pnpm-workspace.yaml")).unwrap();
 
-    let subdir = dir.path().join("apps").join("web");
-    fs::create_dir_all(&subdir).unwrap();
-    File::create(subdir.join("package.json")).unwrap();
+    let mut config = File::create(dir.path().join("devrunner.toml")).unwrap();
+    writeln!(config, "ignore_tools = [\"npm\"]").unwrap();
 
     run_cmd()
-        .current_dir(&subdir)
-        .args(["test", "--dry-run", "--levels=5"])
+        .current_dir(dir.path())
+        .args(["test", "--dry-devrunner"])
+        .assert()
+        .failure()
+        .stderr(predicate::str::contains("No runner found"));
+}
+
+// ============================================================================
+// Command validation / fallback tests
+// ============================================================================
+
+#[test]
+fn test_fallback_cargo_to_make() {
+    let dir = tempdir().unwrap();
+    File::create(dir.path().join("Cargo.toml")).unwrap();
+    let mut makefile = File::create(dir.path().join("Makefile")).unwrap();
+    writeln!(makefile, "precommit:\n\t@echo precommit").unwrap();
+
+    run_cmd()
+        .current_dir(dir.path())
+        .args(["precommit", "--dry-devrunner"])
         .assert()
         .success()
-        .stdout(predicate::str::contains("pnpm run test"));
+        .stdout(predicate::str::contains("make precommit"));
 }
 
 #[test]
-fn test_node_leaf_not_overridden_by_parent_non_node_project() {
+fn test_fallback_npm_to_make() {
     let dir = tempdir().unwrap();
-    File::create(dir.path().join("Cargo.toml")).unwrap();
-
-    let subdir = dir.path().join("frontend");
-    fs::create_dir_all(&subdir).unwrap();
-    File::create(subdir.join("package.json")).unwrap();
+    let mut pkg = File::create(dir.path().join("package.json")).unwrap();
+    writeln!(pkg, r#"{{"name": "test"}}"#).unwrap();
+    let mut makefile = File::create(dir.path().join("Makefile")).unwrap();
+    writeln!(makefile, "deploy:\n\t@echo deploying").unwrap();
 
     run_cmd()
-        .current_dir(&subdir)
-        .args(["test", "--dry-run", "--levels=5"])
+        .current_dir(dir.path())
+        .args(["deploy", "--dry-devrunner"])
         .assert()
         .success()
-        .stdout(predicate::str::contains("npm run test"));
+        .stdout(predicate::str::contains("make deploy"));
+}
+
+#[test]
+fn test_npm_script_takes_priority() {
+    let dir = tempdir().unwrap();
+    let mut pkg = File::create(dir.path().join("package.json")).unwrap();
+    writeln!(pkg, r#"{{"scripts": {{"build": "tsc"}}}}"#).unwrap();
+    let mut makefile = File::create(dir.path().join("Makefile")).unwrap();
+    writeln!(makefile, "build:\n\t@echo make build").unwrap();
+
+    run_cmd()
+        .current_dir(dir.path())
+        .args(["build", "--dry-devrunner"])
+        .assert()
+        .success()
+        .stdout(predicate::str::contains("npm devrunner build"));
+}
+
+#[test]
+fn test_command_not_supported_error() {
+    let dir = tempdir().unwrap();
+    // Use package.json with explicit scripts — NodeValidator returns NotSupported
+    // for commands not found in scripts (unlike Cargo which returns Unknown for
+    // extensible subcommands)
+    let mut file = File::create(dir.path().join("package.json")).unwrap();
+    writeln!(file, r#"{{"scripts": {{"test": "echo test"}}}}"#).unwrap();
+    File::create(dir.path().join("package-lock.json")).unwrap();
+
+    run_cmd()
+        .current_dir(dir.path())
+        .args(["nonexistent-command", "--dry-devrunner"])
+        .assert()
+        .failure()
+        .stderr(predicate::str::contains("not supported"));
 }

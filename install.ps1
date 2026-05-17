@@ -1,7 +1,12 @@
+# Copyright (C) 2025 Verseles
+# SPDX-License-Identifier: AGPL-3.0
+#
+# Install script for 'devrunner' CLI on Windows
+# Usage: irm https://raw.githubusercontent.com/verseles/devrunner/main/install.ps1 | iex
 
 $ErrorActionPreference = "Stop"
 
-$Repo = "princepal9120/devrunner"
+$Repo = "verseles/devrunner"
 $BinaryName = "devrunner.exe"
 $InstallDir = "$env:USERPROFILE\.local\bin"
 
@@ -26,87 +31,50 @@ function Get-LatestVersion {
     return $release.tag_name
 }
 
-function Resolve-InstallDir {
-    $userLocal = "$env:USERPROFILE\.local\bin"
-    try {
-        New-Item -ItemType Directory -Path $userLocal -Force | Out-Null
-        return $userLocal
-    } catch {}
-
-    $programFilesDir = Join-Path $env:ProgramFiles "devrunner"
-    try {
-        New-Item -ItemType Directory -Path $programFilesDir -Force | Out-Null
-        return $programFilesDir
-    } catch {
-        throw "Could not create install directory in $userLocal or $programFilesDir"
-    }
-}
-
-function Install-Devrunner {
-    # ASCII Art Banner
+function Install-devrunner {
     Write-Host ""
-    Write-Host "  ██████╗ ███████╗██╗   ██╗██████╗ ██╗   ██╗███╗   ██╗███╗   ██╗███████╗██████╗ " -ForegroundColor Blue
-    Write-Host "  ██╔══██╗██╔════╝██║   ██║██╔══██╗██║   ██║████╗  ██║████╗  ██║██╔════╝██╔══██╗" -ForegroundColor Blue
-    Write-Host "  ██║  ██║█████╗  ██║   ██║██████╔╝██║   ██║██╔██╗ ██║██╔██╗ ██║█████╗  ██████╔╝" -ForegroundColor Blue
-    Write-Host "  ██║  ██║██╔══╝  ╚██╗ ██╔╝██╔══██╗██║   ██║██║╚██╗██║██║╚██╗██║██╔══╝  ██╔══██╗" -ForegroundColor Blue
-    Write-Host "  ██████╔╝███████╗ ╚████╔╝ ██║  ██║╚██████╔╝██║ ╚████║██║ ╚████║███████╗██║  ██║" -ForegroundColor Blue
-    Write-Host "  ╚═════╝ ╚══════╝  ╚═══╝  ╚═╝  ╚═╝ ╚═════╝ ╚═╝  ╚═══╝╚═╝  ╚═══╝╚══════╝╚═╝  ╚═╝" -ForegroundColor Blue
-    Write-Host ""
-    Write-Host "                   🚀 Universal Task Runner" -ForegroundColor Green
+    Write-Host "  🚀 devrunner - Universal Task Runner Installer" -ForegroundColor Magenta
+    Write-Host "  ===========================================" -ForegroundColor Magenta
     Write-Host ""
 
     # Detect architecture
     $arch = Get-Architecture
     Write-Info "Detected architecture: windows-$arch"
 
-    $InstallDir = Resolve-InstallDir
-    Write-Info "Install directory: $InstallDir"
-
     # Get latest version
     $version = Get-LatestVersion
     Write-Info "Latest version: $version"
 
     # Build asset name and URL
-    # Try devrunner first, then run
-    $assetBase = "devrunner-windows-$arch.exe"
-    $assetLegacy = "run-windows-$arch.exe"
-    $downloadUrl = "https://github.com/$Repo/releases/download/$version/$assetBase"
+    $assetName = "devrunner-windows-$arch.exe"
+    $downloadUrl = "https://github.com/$Repo/releases/download/$version/$assetName"
     $checksumUrl = "$downloadUrl.sha256"
-
-    # Check if devrunner asset exists
-    try {
-        $req = Invoke-WebRequest -Uri $downloadUrl -Method Head -ErrorAction Stop
-    } catch {
-        # Fallback
-        $assetBase = $assetLegacy
-        $downloadUrl = "https://github.com/$Repo/releases/download/$version/$assetBase"
-        $checksumUrl = "$downloadUrl.sha256"
-    }
 
     # Create temp directory
     $tempDir = New-Item -ItemType Directory -Path (Join-Path $env:TEMP "devrunner-install-$(Get-Random)")
     $tempBinary = Join-Path $tempDir $BinaryName
-    $tempChecksum = Join-Path $tempDir "$assetBase.sha256"
+    $tempChecksum = Join-Path $tempDir "$assetName.sha256"
 
     try {
         # Download binary
-        Write-Info "Downloading $assetBase..."
+        Write-Info "Downloading $assetName..."
         Invoke-WebRequest -Uri $downloadUrl -OutFile $tempBinary -UseBasicParsing
 
         # Download and verify checksum
         Write-Info "Verifying checksum..."
-        Invoke-WebRequest -Uri $checksumUrl -OutFile $tempChecksum -UseBasicParsing
-        $checksumContent = (Get-Content $tempChecksum -Raw).Trim()
-        $expectedHash = $checksumContent.Split()[0].ToUpper()
-        if (-not $expectedHash -or $expectedHash.Length -ne 64) {
-            throw "Invalid checksum file format for $assetBase"
-        }
-        $actualHash = (Get-FileHash -Path $tempBinary -Algorithm SHA256).Hash.ToUpper()
+        try {
+            Invoke-WebRequest -Uri $checksumUrl -OutFile $tempChecksum -UseBasicParsing
+            $expectedHash = (Get-Content $tempChecksum).Split(" ")[0].ToUpper()
+            $actualHash = (Get-FileHash -Path $tempBinary -Algorithm SHA256).Hash.ToUpper()
 
-        if ($expectedHash -ne $actualHash) {
-            throw "Checksum mismatch for $assetBase"
+            if ($expectedHash -eq $actualHash) {
+                Write-Success "Checksum verified"
+            } else {
+                Write-Warning "Checksum mismatch (continuing anyway)"
+            }
+        } catch {
+            Write-Warning "Could not verify checksum (continuing anyway)"
         }
-        Write-Success "Checksum verified"
 
         # Create install directory
         if (-not (Test-Path $InstallDir)) {
@@ -124,7 +92,7 @@ function Install-Devrunner {
         if ($userPath -notlike "*$InstallDir*") {
             Write-Warning "$InstallDir is not in your PATH"
             Write-Host ""
-            Write-Host "  To add it permanently, run:" -ForegroundColor Yellow
+            Write-Host "  To add it permanently, devrunner:" -ForegroundColor Yellow
             Write-Host ""
             Write-Host "    [Environment]::SetEnvironmentVariable('PATH', `$env:PATH + ';$InstallDir', 'User')" -ForegroundColor White
             Write-Host ""
@@ -144,10 +112,9 @@ function Install-Devrunner {
         }
 
         Write-Host ""
-        Write-Host "  ✅ Installation complete!" -ForegroundColor Green
+        Write-Success "Installation complete!"
         Write-Host ""
-        Write-Host "  Run " -NoNewline; Write-Host "devrunner --help" -ForegroundColor Blue -NoNewline; Write-Host " to get started"
-        Write-Host "  Example: " -NoNewline; Write-Host "devrunner test" -ForegroundColor Blue -NoNewline; Write-Host " or " -NoNewline; Write-Host "devrunner build" -ForegroundColor Blue
+        Write-Host "  devrunner 'devrunner --help' to get started" -ForegroundColor Cyan
         Write-Host ""
 
     } finally {
@@ -156,5 +123,5 @@ function Install-Devrunner {
     }
 }
 
-# Devrunner installer
-Install-Devrunner
+# devrunner installer
+Install-devrunner

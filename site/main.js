@@ -73,7 +73,7 @@ function toggleMobileMenu() {
     const savedTheme = localStorage.getItem('theme') || (window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light');
     document.documentElement.setAttribute('data-theme', savedTheme);
 
-    // Run immediately if DOM is ready, otherwise wait
+    // devrunner immediately if DOM is ready, otherwise wait
     if (document.readyState === 'loading') {
         document.addEventListener('DOMContentLoaded', () => updateThemeIcon(savedTheme));
     } else {

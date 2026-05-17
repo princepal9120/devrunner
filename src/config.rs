@@ -1,15 +1,60 @@
+// Copyright (C) 2025 Verseles
+//
+// This program is free software: you can redistribute it and/or modify
+// it under the terms of the GNU Affero General Public License as published
+// by the Free Software Foundation, version 3 of the License.
+//
+// This program is distributed in the hope that it will be useful,
+// but WITHOUT ANY WARRANTY; without even the implied warranty of
+// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+// GNU Affero General Public License for more details.
+
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
 use std::fs;
 use std::path::{Path, PathBuf};
 
-/// Configuration structure for the run CLI
+/// Default interval between update checks in hours
+const DEFAULT_CHECK_INTERVAL_HOURS: u64 = 2;
+
+/// Configuration for the auto-update system
+#[derive(Debug, Clone, Serialize, Deserialize, Default)]
+#[serde(default)]
+pub struct UpdateConfig {
+    /// Enable auto-update (default: true)
+    pub enabled: Option<bool>,
+    /// Hours between update checks (default: 2)
+    pub check_interval_hours: Option<u64>,
+}
+
+impl UpdateConfig {
+    /// Get whether updates are enabled (default: true)
+    pub fn get_enabled(&self) -> bool {
+        self.enabled.unwrap_or(true)
+    }
+
+    /// Get the check interval in hours (default: 2)
+    pub fn get_check_interval_hours(&self) -> u64 {
+        self.check_interval_hours
+            .unwrap_or(DEFAULT_CHECK_INTERVAL_HOURS)
+    }
+
+    /// Merge two UpdateConfig, with other taking precedence
+    pub fn merge(self, other: UpdateConfig) -> Self {
+        UpdateConfig {
+            enabled: other.enabled.or(self.enabled),
+            check_interval_hours: other.check_interval_hours.or(self.check_interval_hours),
+        }
+    }
+}
+
+/// Configuration structure for the devrunner CLI
 #[derive(Debug, Clone, Serialize, Deserialize, Default)]
 #[serde(default)]
 pub struct Config {
     /// Maximum levels to search above current directory
     pub max_levels: Option<u8>,
-    /// Enable auto-update
+    /// Enable auto-update (legacy, use [update] section instead)
     pub auto_update: Option<bool>,
     /// Tools to ignore during detection
     pub ignore_tools: Vec<String>,
@@ -17,17 +62,17 @@ pub struct Config {
     pub verbose: Option<bool>,
     /// Enable quiet mode
     pub quiet: Option<bool>,
-    /// Custom command aliases (e.g., "t" -> "test")
-    pub aliases: HashMap<String, String>,
-    /// Show execution time after command completes
-    pub show_timing: Option<bool>,
+    /// Update configuration section
+    pub update: Option<UpdateConfig>,
+    /// Custom commands overrides
+    pub commands: Option<HashMap<String, String>>,
 }
 
 impl Config {
     /// Load configuration from default locations with precedence:
     /// 1. Defaults (hardcoded)
-    /// 2. Global config (~/.config/run/config.toml)
-    /// 3. Local config (./run.toml)
+    /// 2. Global config (~/.config/devrunner/config.toml)
+    /// 3. Local config (./devrunner.toml)
     pub fn load() -> Self {
         let mut config = Config::default();
 
@@ -39,7 +84,7 @@ impl Config {
         }
 
         // Load local config
-        let local_path = PathBuf::from("run.toml");
+        let local_path = PathBuf::from("devrunner.toml");
         if let Ok(local_config) = Self::load_from_file(&local_path) {
             config = config.merge(local_config);
         }
@@ -49,12 +94,17 @@ impl Config {
 
     /// Get the path to the global configuration file
     pub fn global_config_path() -> Option<PathBuf> {
-        dirs::config_dir().map(|p| p.join("run").join("config.toml"))
+        dirs::config_dir().map(|p| p.join("devrunner").join("config.toml"))
     }
 
     /// Get the path to the update info file
     pub fn update_info_path() -> Option<PathBuf> {
-        dirs::config_dir().map(|p| p.join("run").join("update.json"))
+        dirs::config_dir().map(|p| p.join("devrunner").join("update.json"))
+    }
+
+    /// Get the path to the last update check timestamp file
+    pub fn last_update_check_path() -> Option<PathBuf> {
+        dirs::config_dir().map(|p| p.join("devrunner").join("last_update_check"))
     }
 
     /// Load configuration from a specific file
@@ -66,10 +116,6 @@ impl Config {
 
     /// Merge two configs, with other taking precedence
     pub fn merge(self, other: Config) -> Self {
-        // Merge aliases, with other taking precedence for conflicts
-        let mut merged_aliases = self.aliases;
-        merged_aliases.extend(other.aliases);
-
         Config {
             max_levels: other.max_levels.or(self.max_levels),
             auto_update: other.auto_update.or(self.auto_update),
@@ -80,8 +126,21 @@ impl Config {
             },
             verbose: other.verbose.or(self.verbose),
             quiet: other.quiet.or(self.quiet),
-            aliases: merged_aliases,
-            show_timing: other.show_timing.or(self.show_timing),
+            update: match (self.update, other.update) {
+                (Some(base), Some(over)) => Some(base.merge(over)),
+                (None, Some(over)) => Some(over),
+                (Some(base), None) => Some(base),
+                (None, None) => None,
+            },
+            commands: match (self.commands, other.commands) {
+                (Some(mut base), Some(over)) => {
+                    base.extend(over);
+                    Some(base)
+                }
+                (None, Some(over)) => Some(over),
+                (Some(base), None) => Some(base),
+                (None, None) => None,
+            },
         }
     }
 
@@ -91,8 +150,18 @@ impl Config {
     }
 
     /// Get auto update setting with default fallback
+    /// This checks both the legacy `auto_update` field and the new `[update]` section
     pub fn get_auto_update(&self) -> bool {
+        // New [update] section takes precedence over legacy field
+        if let Some(ref update) = self.update {
+            return update.get_enabled();
+        }
         self.auto_update.unwrap_or(true)
+    }
+
+    /// Get the update configuration, creating a default if not set
+    pub fn get_update_config(&self) -> UpdateConfig {
+        self.update.clone().unwrap_or_default()
     }
 
     /// Get verbose setting with default fallback
@@ -105,24 +174,10 @@ impl Config {
         self.quiet.unwrap_or(false)
     }
 
-    /// Get show timing setting with default fallback
-    pub fn get_show_timing(&self) -> bool {
-        self.show_timing.unwrap_or(false)
-    }
-
-    /// Resolve an alias to its actual command
-    /// Returns the original command if no alias is found
-    pub fn resolve_alias(&self, command: &str) -> String {
-        self.aliases
-            .get(command)
-            .cloned()
-            .unwrap_or_else(|| command.to_string())
-    }
-
     /// Ensure config directory exists
     pub fn ensure_config_dir() -> std::io::Result<PathBuf> {
         if let Some(config_dir) = dirs::config_dir() {
-            let run_dir = config_dir.join("run");
+            let run_dir = config_dir.join("devrunner");
             fs::create_dir_all(&run_dir)?;
             Ok(run_dir)
         } else {
@@ -156,8 +211,8 @@ mod tests {
             ignore_tools: vec!["npm".to_string()],
             verbose: None,
             quiet: None,
-            aliases: HashMap::new(),
-            show_timing: None,
+            update: None,
+            commands: None,
         };
 
         let override_config = Config {
@@ -166,8 +221,8 @@ mod tests {
             ignore_tools: vec!["yarn".to_string()],
             verbose: Some(true),
             quiet: None,
-            aliases: HashMap::new(),
-            show_timing: None,
+            update: None,
+            commands: None,
         };
 
         let merged = base.merge(override_config);
@@ -175,6 +230,34 @@ mod tests {
         assert!(merged.get_auto_update());
         assert_eq!(merged.ignore_tools, vec!["yarn".to_string()]);
         assert!(merged.get_verbose());
+    }
+
+    #[test]
+    fn test_merge_commands() {
+        let mut base_cmds = HashMap::new();
+        base_cmds.insert("base".to_string(), "echo base".to_string());
+        base_cmds.insert("both".to_string(), "echo base_both".to_string());
+
+        let base = Config {
+            commands: Some(base_cmds),
+            ..Default::default()
+        };
+
+        let mut override_cmds = HashMap::new();
+        override_cmds.insert("over".to_string(), "echo over".to_string());
+        override_cmds.insert("both".to_string(), "echo over_both".to_string());
+
+        let override_config = Config {
+            commands: Some(override_cmds),
+            ..Default::default()
+        };
+
+        let merged = base.merge(override_config);
+        let cmds = merged.commands.unwrap();
+
+        assert_eq!(cmds.get("base").unwrap(), "echo base");
+        assert_eq!(cmds.get("over").unwrap(), "echo over");
+        assert_eq!(cmds.get("both").unwrap(), "echo over_both");
     }
 
     #[test]
@@ -208,5 +291,80 @@ verbose = true
 
         let result = Config::load_from_file(&config_path);
         assert!(result.is_err());
+    }
+
+    #[test]
+    fn test_update_config_defaults() {
+        let update_config = UpdateConfig::default();
+        assert!(update_config.get_enabled());
+        assert_eq!(update_config.get_check_interval_hours(), 2);
+    }
+
+    #[test]
+    fn test_update_config_custom_values() {
+        let update_config = UpdateConfig {
+            enabled: Some(false),
+            check_interval_hours: Some(24),
+        };
+        assert!(!update_config.get_enabled());
+        assert_eq!(update_config.get_check_interval_hours(), 24);
+    }
+
+    #[test]
+    fn test_update_config_merge() {
+        let base = UpdateConfig {
+            enabled: Some(true),
+            check_interval_hours: Some(2),
+        };
+        let over = UpdateConfig {
+            enabled: None,
+            check_interval_hours: Some(4),
+        };
+        let merged = base.merge(over);
+        assert!(merged.get_enabled());
+        assert_eq!(merged.get_check_interval_hours(), 4);
+    }
+
+    #[test]
+    fn test_load_config_with_update_section() {
+        let dir = tempdir().unwrap();
+        let config_path = dir.path().join("config.toml");
+
+        fs::write(
+            &config_path,
+            r#"
+max_levels = 3
+
+[update]
+enabled = true
+check_interval_hours = 4
+"#,
+        )
+        .unwrap();
+
+        let config = Config::load_from_file(&config_path).unwrap();
+        assert!(config.get_auto_update());
+        assert_eq!(config.get_update_config().get_check_interval_hours(), 4);
+    }
+
+    #[test]
+    fn test_update_section_overrides_legacy_auto_update() {
+        let dir = tempdir().unwrap();
+        let config_path = dir.path().join("config.toml");
+
+        fs::write(
+            &config_path,
+            r#"
+auto_update = true
+
+[update]
+enabled = false
+"#,
+        )
+        .unwrap();
+
+        let config = Config::load_from_file(&config_path).unwrap();
+        // [update].enabled should override legacy auto_update
+        assert!(!config.get_auto_update());
     }
 }

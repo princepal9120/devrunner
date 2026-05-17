@@ -1,162 +1,161 @@
 # devrunner
 
-Universal task runner for modern development.
+**One command. Any project. Zero configuration.**
 
-`devrunner` detects your project tooling (npm, pnpm, cargo, poetry, go, maven, and more) and runs the right command without needing to remember ecosystem-specific syntax.
+[![CI](https://github.com/verseles/devrunner/workflows/CI/badge.svg)](https://github.com/verseles/devrunner/actions)
+[![Release](https://img.shields.io/github/v/release/verseles/devrunner)](https://github.com/verseles/devrunner/releases)
+[![License](https://img.shields.io/badge/license-AGPL--3.0-blue)](LICENSE)
 
-## Why devrunner
-
-- Auto-detects 20+ runners across Node.js, Python, Rust, Go, Java, Ruby, PHP, .NET, Elixir, Swift, Zig, and Make.
-- Works from nested directories by searching parent directories for project markers.
-- Monorepo-aware for Node workspaces: prefers root lockfile manager (pnpm/yarn/bun/npm lock) over leaf `package.json` fallback.
-- Handles lockfile/tool conflicts and returns CI-safe exit codes.
-- Includes shell completions and optional background self-update.
-
-## Installation
-
-### Mac/Linux
-
-```bash
-curl -fsSL https://raw.githubusercontent.com/princepal9120/devrunner/main/install.sh | bash
+```
+devrunner test
 ```
 
-### Windows (PowerShell)
+That's it. Whether your project uses npm, yarn, pnpm, bun, cargo, poetry, gradle, or any of 20+ other tools — `devrunner` figures it out.
 
-```powershell
-irm https://raw.githubusercontent.com/princepal9120/devrunner/main/install.ps1 | iex
-```
+## Why?
 
-### From source
+Every project has its own package manager. Every time you switch projects, you ask yourself:
+
+> "Was this npm or yarn? pnpm? Does it have a Makefile?"
+
+**devrunner** eliminates this friction. Just type `devrunner <command>` and it works.
+
+## Install
 
 ```bash
-cargo install devrunner
+# Linux/macOS
+curl -fsSL install.cat/verseles/devrunner | bash
+
+# Windows (PowerShell)
+irm install.cat/verseles/devrunner | iex
+
+# Or via Cargo
+cargo install devrunner-cli
 ```
 
 ## Usage
 
-Basic syntax:
-
 ```bash
-devrunner <command> [args...] [flags] [-- extra-args]
+devrunner test              # Runs test with detected tool
+devrunner build             # Runs build
+devrunner lint              # Runs lint
+devrunner dev               # Runs dev server
+
+# Pass arguments after --
+devrunner test -- --coverage --watch
+
+# Works from any subdirectory
+cd src/components && devrunner test    # Finds package.json in parent dirs
 ```
 
-Examples:
+## Supported Tools
+
+| Ecosystem | Tools (priority order) |
+|-----------|----------------------|
+| **Monorepo** | nx → turbo → lerna |
+| **Node.js** | bun → pnpm → yarn → npm |
+| **Deno** | deno |
+| **Python** | uv → poetry → pipenv → pip |
+| **Rust** | cargo |
+| **PHP** | composer |
+| **Go** | task → go |
+| **Ruby** | bundler → rake |
+| **Java** | gradle → maven |
+| **.NET** | dotnet |
+| **Elixir** | mix |
+| **Swift** | swift (SPM) |
+| **Zig** | zig |
+| **Generic** | just → make |
+
+Detection is based on lockfiles first (more specific), then manifest files.
+
+## Options
 
 ```bash
-# Run tests with detected tool
-devrunner test
-
-# Run from nested directory (searches parent folders)
-devrunner build
-
-# In monorepos, prefers workspace lockfile tool over leaf package fallback
-devrunner test --levels=5
-
-# Increase search depth
-devrunner lint --levels=5
-
-# Ignore specific tools
-devrunner start --ignore=npm,yarn
-
-# Print command without executing
-devrunner test --dry-run
-
-# Pass raw arguments through to underlying runner
-devrunner test -- --coverage --verbose
-
-# Force blocking update
-devrunner --update
-
-# Inspect detection behavior
-devrunner why
-
-# Diagnose tool installation and conflicts
-devrunner doctor
-
-# List available scripts/targets for supported project types
-devrunner list
+devrunner test --dry-devrunner         # Show command without executing
+devrunner test --verbose         # Show detection details
+devrunner test --quiet           # Suppress output except errors
+devrunner test --levels=5        # Search up to 5 parent directories (default: 3)
+devrunner test --ignore=npm,yarn # Skip specific runners
+devrunner --update               # Force update check
 ```
-
-## Supported Ecosystems
-
-| Ecosystem | Detected tools |
-| --- | --- |
-| JavaScript/TypeScript | bun, pnpm, yarn, npm |
-| Python | uv, poetry, pipenv, pip |
-| Rust | cargo |
-| Go | task, go |
-| Java | gradle, maven |
-| Ruby | bundler, rake |
-| PHP | composer |
-| .NET | dotnet |
-| Elixir | mix |
-| Swift | swift |
-| Zig | zig |
-| Generic | make |
 
 ## Configuration
 
-Config precedence is:
-
-1. Built-in defaults
-2. Global config: `~/.config/run/config.toml`
-3. Local config: `./run.toml`
-4. CLI flags
-
-Example global/local config:
+Create `~/.config/devrunner/config.toml` for global settings:
 
 ```toml
 max_levels = 5
 auto_update = true
 ignore_tools = ["npm"]
-verbose = false
-quiet = false
-show_timing = false
 
-[aliases]
-t = "test"
-b = "build"
+# Advanced update settings (optional)
+[update]
+enabled = true              # Enable auto-update (default: true)
+check_interval_hours = 2    # Hours between update checks (default: 2)
 ```
+
+Or `devrunner.toml` in your project for local overrides.
+
+**Precedence:** CLI args > local config > global config > defaults
+
+## Conflict Resolution
+
+When multiple lockfiles exist (e.g., `package-lock.json` + `yarn.lock`):
+
+1. **Corepack** — If `package.json` has a `packageManager` field, uses that tool
+2. If only one tool is installed → uses it with a warning
+3. If multiple tools installed → error with suggested action
+4. If no tools installed → shows installation instructions
 
 ## Exit Codes
 
-- `0`: Success
-- `1`: Generic CLI/runtime error
-- `2`: Runner not found
-- `3`: Lockfile conflict
-- `127`: Detected tool is not installed
+| Code | Meaning |
+|------|---------|
+| 0 | Success (passes through original exit code) |
+| 1 | Generic error |
+| 2 | No runner found |
+| 3 | Lockfile conflict |
+| 127 | Tool not installed |
+
+## Auto-Update
+
+Updates happen silently in the background after commands complete (every 2 hours by default). 
+
+Disable with:
+- Environment variable: `RUN_NO_UPDATE=1`
+- Legacy config: `auto_update = false`
+- New config section: `[update] enabled = false`
 
 ## Shell Completions
 
-Generate completion files:
-
 ```bash
+# Bash
 devrunner completions bash > ~/.local/share/bash-completion/completions/devrunner
-devrunner completions zsh > ~/.zsh/completion/_devrunner
+
+# Zsh
+devrunner completions zsh > ~/.zsh/completion/_run
+
+# Fish
 devrunner completions fish > ~/.config/fish/completions/devrunner.fish
-devrunner completions powershell > _devrunner.ps1
+
+# PowerShell
+devrunner completions powershell >> $PROFILE
 ```
 
-For zsh, ensure your `fpath` includes `~/.zsh/completion` and run `compinit`.
-
-## Local Development
-
-Run the same checks as CI:
+## Development
 
 ```bash
-./scripts/pre-push.sh
+git clone https://github.com/verseles/devrunner.git
+cd devrunner
+make precommit   # Format, lint, test, audit
+cargo build --release
 ```
-
-It runs formatting, clippy, tests, and security audit (when `cargo-audit` is installed).
-
-## Release Artifacts
-
-Tag pushes matching `v*` trigger cross-platform builds and GitHub release publishing via `.github/workflows/ci.yml`.
-
-## Changelog
-
-See `CHANGELOG.md` for unreleased and released changes.
 
 ## License
 
-Licensed under AGPL-3.0. See `LICENSE`.
+AGPL-3.0. See [LICENSE](LICENSE).
+
+---
+
+Made with mass production by [Verseles](https://github.com/verseles)

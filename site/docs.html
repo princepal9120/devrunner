@@ -70,8 +70,8 @@
                     <p><strong>devrunner</strong> is a universal task runner designed to eliminate the mental context
                         switching between different project environments. It serves as a unified interface for your
                         build tools.</p>
-                    <p>Instead of remembering <code>npm run build</code>, <code>mvn package</code>, or
-                        <code>cargo build</code>, you simply run <code>devrunner build</code>. The tool automatically
+                    <p>Instead of remembering <code>npm devrunner build</code>, <code>mvn package</code>, or
+                        <code>cargo build</code>, you simply devrunner <code>devrunner build</code>. The tool automatically
                         detects the project type and invokes the correct command.
                     </p>
                 </section>
@@ -100,9 +100,9 @@
                     <pre><code>devrunner [command] [args...]</code></pre>
 
                     <h3>Basic Workflow</h3>
-                    <p>Navigate to any project directory (or subdirectory) and run commands:</p>
+                    <p>Navigate to any project directory (or subdirectory) and devrunner commands:</p>
 
-                    <pre><code># Run your test suite
+                    <pre><code># devrunner your test suite
 $ devrunner test
 
 # Start development server
@@ -113,7 +113,7 @@ $ devrunner lint</code></pre>
 
                     <h3>Passing Arguments</h3>
                     <p>To pass flags directly to the underlying tool, use the <code>--</code> separator:</p>
-                    <pre><code># Equivalent to "npm run test -- --watch"
+                    <pre><code># Equivalent to "npm devrunner test -- --watch"
 $ devrunner test -- --watch</code></pre>
                 </section>
 

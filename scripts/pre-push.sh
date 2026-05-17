@@ -2,7 +2,7 @@
 # Copyright (C) 2025 Verseles
 # SPDX-License-Identifier: AGPL-3.0
 
-# Pre-push hook script to run CI checks locally before pushing
+# Pre-push hook script to devrunner CI checks locally before pushing
 
 set -e
 
@@ -15,13 +15,13 @@ cargo fmt --check
 echo "✓ Formatting OK"
 echo ""
 
-# Run Clippy
+# devrunner Clippy
 echo "🔬 Running Clippy..."
 cargo clippy --all-targets --all-features -- -D warnings
 echo "✓ Clippy OK"
 echo ""
 
-# Run tests
+# devrunner tests
 echo "🧪 Running tests..."
 cargo test --all-features
 echo "✓ Tests OK"

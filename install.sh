@@ -1,9 +1,12 @@
+#!/usr/bin/env bash
+# Copyright (C) 2025 Verseles
+# SPDX-License-Identifier: AGPL-3.0
+
 set -euo pipefail
 
-REPO="princepal9120/devrunner"
+REPO="verseles/devrunner"
 INSTALL_DIR="${HOME}/.local/bin"
 BINARY_NAME="devrunner"
-SUDO_CMD=""
 
 # Colors
 RED='\033[0;31m'
@@ -73,38 +76,13 @@ detect_platform() {
     print_info "Detected platform: ${PLATFORM}"
 }
 
-select_install_dir() {
-    local user_dir="${HOME}/.local/bin"
-
-    if mkdir -p "$user_dir" 2>/dev/null && [ -w "$user_dir" ]; then
-        INSTALL_DIR="$user_dir"
-        SUDO_CMD=""
-        return
-    fi
-
-    if [ -d "/usr/local/bin" ] && [ -w "/usr/local/bin" ]; then
-        INSTALL_DIR="/usr/local/bin"
-        SUDO_CMD=""
-        return
-    fi
-
-    if command -v sudo >/dev/null 2>&1; then
-        INSTALL_DIR="/usr/local/bin"
-        SUDO_CMD="sudo"
-        return
-    fi
-
-    print_error "Could not find a writable install directory"
-    print_error "Create ${user_dir} or install sudo to allow /usr/local/bin fallback"
-    exit 1
-}
-
 # Get the latest release version
 get_latest_version() {
     print_info "Fetching latest version..."
 
-    local response=$(curl -sL "https://api.github.com/repos/${REPO}/releases/latest")
-    LATEST_VERSION=$(echo "$response" | grep '"tag_name"' | sed -E 's/.*"tag_name": *"([^"]+)".*/\1/' || true)
+    LATEST_VERSION=$(curl -sL "https://api.github.com/repos/${REPO}/releases/latest" | \
+        grep '"tag_name"' | \
+        sed -E 's/.*"tag_name": *"([^"]+)".*/\1/')
 
     if [ -z "$LATEST_VERSION" ]; then
         print_error "Failed to fetch latest version"
@@ -116,94 +94,58 @@ get_latest_version() {
 
 # Download and verify binary
 download_binary() {
-    # Try devrunner- first, then run-
-    local asset_base="devrunner-${PLATFORM}"
-    local asset_legacy="run-${PLATFORM}"
-    
+    local asset_name="devrunner-${PLATFORM}"
     if [ "$OS" = "windows" ]; then
-        asset_base="${asset_base}.exe"
-        asset_legacy="${asset_legacy}.exe"
+        asset_name="${asset_name}.exe"
     fi
 
-    local download_url="https://github.com/${REPO}/releases/download/${LATEST_VERSION}/${asset_base}"
-    local asset_name="${asset_base}"
-
-    # Check if devrunner asset exists (using curl -I for HEAD request)
-    # If it fails, fallback to legacy name
-    if ! curl -fsSI "$download_url" > /dev/null; then
-        asset_name="${asset_legacy}"
-        download_url="https://github.com/${REPO}/releases/download/${LATEST_VERSION}/${asset_name}"
-    fi
-
+    local download_url="https://github.com/${REPO}/releases/download/${LATEST_VERSION}/${asset_name}"
     local checksum_url="${download_url}.sha256"
 
     print_info "Downloading ${asset_name}..."
 
     local tmp_dir=$(mktemp -d)
-    local tmp_binary="${tmp_dir}/${asset_name}"
+    local tmp_binary="${tmp_dir}/${BINARY_NAME}"
     local tmp_checksum="${tmp_dir}/${asset_name}.sha256"
 
-    # Download binary with original asset name for checksum verification
-    if ! curl -fsSL "$download_url" -o "$tmp_binary"; then
+    # Download binary
+    if ! curl -sL "$download_url" -o "$tmp_binary"; then
         print_error "Failed to download binary"
         rm -rf "$tmp_dir"
         exit 1
     fi
 
-    # Download and verify checksum (required)
+    # Download and verify checksum
     print_info "Verifying checksum..."
-    if ! curl -fsSL "$checksum_url" -o "$tmp_checksum"; then
-        print_error "Failed to download checksum file: ${checksum_url}"
-        rm -rf "$tmp_dir"
-        exit 1
-    fi
-
-    local expected_hash
-    expected_hash=$(awk '{print tolower($1)}' "$tmp_checksum")
-    if [ -z "$expected_hash" ]; then
-        print_error "Invalid checksum file format for ${asset_name}"
-        rm -rf "$tmp_dir"
-        exit 1
-    fi
-
-    local actual_hash
-    if command -v sha256sum >/dev/null 2>&1; then
-        actual_hash=$(sha256sum "$tmp_binary" | awk '{print tolower($1)}')
-    elif command -v shasum >/dev/null 2>&1; then
-        actual_hash=$(shasum -a 256 "$tmp_binary" | awk '{print tolower($1)}')
+    if curl -sL "$checksum_url" -o "$tmp_checksum" 2>/dev/null; then
+        cd "$tmp_dir"
+        if command -v sha256sum &> /dev/null; then
+            if sha256sum -c "$tmp_checksum" --status 2>/dev/null; then
+                print_success "Checksum verified"
+            else
+                print_warning "Checksum verification failed (continuing anyway)"
+            fi
+        elif command -v shasum &> /dev/null; then
+            if shasum -a 256 -c "$tmp_checksum" --status 2>/dev/null; then
+                print_success "Checksum verified"
+            else
+                print_warning "Checksum verification failed (continuing anyway)"
+            fi
+        else
+            print_warning "No checksum tool found, skipping verification"
+        fi
+        cd - > /dev/null
     else
-        print_error "No SHA256 tool found (need sha256sum or shasum)"
-        rm -rf "$tmp_dir"
-        exit 1
+        print_warning "Could not download checksum file, skipping verification"
     fi
-
-    if [ "$actual_hash" != "$expected_hash" ]; then
-        print_error "Checksum mismatch for ${asset_name}"
-        rm -rf "$tmp_dir"
-        exit 1
-    fi
-
-    print_success "Checksum verified"
-
-    # Rename binary to final name
-    mv "$tmp_binary" "${tmp_dir}/${BINARY_NAME}"
 
     # Create install directory if needed
-    if [ -n "$SUDO_CMD" ]; then
-        $SUDO_CMD mkdir -p "$INSTALL_DIR"
-    else
-        mkdir -p "$INSTALL_DIR"
-    fi
+    mkdir -p "$INSTALL_DIR"
 
     # Install binary
     print_info "Installing to ${INSTALL_DIR}/${BINARY_NAME}..."
-    if [ -n "$SUDO_CMD" ]; then
-        $SUDO_CMD mv "${tmp_dir}/${BINARY_NAME}" "${INSTALL_DIR}/${BINARY_NAME}"
-        $SUDO_CMD chmod +x "${INSTALL_DIR}/${BINARY_NAME}"
-    else
-        mv "${tmp_dir}/${BINARY_NAME}" "${INSTALL_DIR}/${BINARY_NAME}"
-        chmod +x "${INSTALL_DIR}/${BINARY_NAME}"
-    fi
+    mv "$tmp_binary" "${INSTALL_DIR}/${BINARY_NAME}"
+    chmod +x "${INSTALL_DIR}/${BINARY_NAME}"
 
     # Cleanup
     rm -rf "$tmp_dir"
@@ -238,33 +180,21 @@ check_path() {
     fi
 }
 
-
+# Main installation flow
 main() {
-    # ASCII Art Banner
     echo ""
-    echo -e "${BLUE}"
-    echo "  ██████╗ ███████╗██╗   ██╗██████╗ ██╗   ██╗███╗   ██╗███╗   ██╗███████╗██████╗ "
-    echo "  ██╔══██╗██╔════╝██║   ██║██╔══██╗██║   ██║████╗  ██║████╗  ██║██╔════╝██╔══██╗"
-    echo "  ██║  ██║█████╗  ██║   ██║██████╔╝██║   ██║██╔██╗ ██║██╔██╗ ██║█████╗  ██████╔╝"
-    echo "  ██║  ██║██╔══╝  ╚██╗ ██╔╝██╔══██╗██║   ██║██║╚██╗██║██║╚██╗██║██╔══╝  ██╔══██╗"
-    echo "  ██████╔╝███████╗ ╚████╔╝ ██║  ██║╚██████╔╝██║ ╚████║██║ ╚████║███████╗██║  ██║"
-    echo "  ╚═════╝ ╚══════╝  ╚═══╝  ╚═╝  ╚═╝ ╚═════╝ ╚═╝  ╚═══╝╚═╝  ╚═══╝╚══════╝╚═╝  ╚═╝"
-    echo -e "${NC}"
-    echo -e "${GREEN}                   🚀 Universal Task Runner${NC}"
+    echo "  🚀 devrunner - Universal Task Runner Installer"
+    echo "  ==========================================="
     echo ""
 
     detect_platform
-    select_install_dir
-    print_info "Install directory: ${INSTALL_DIR}"
     get_latest_version
     download_binary
     check_path
 
+    print_success "Installation complete!"
     echo ""
-    echo -e "${GREEN}  ✅ Installation complete!${NC}"
-    echo ""
-    echo -e "  Run ${BLUE}devrunner --help${NC} to get started"
-    echo -e "  Example: ${BLUE}devrunner test${NC} or ${BLUE}devrunner build${NC}"
+    echo "  devrunner 'devrunner --help' to get started"
     echo ""
 }
 

@@ -1,9 +1,20 @@
+// Copyright (C) 2025 Verseles
+//
+// This program is free software: you can redistribute it and/or modify
+// it under the terms of the GNU Affero General Public License as published
+// by the Free Software Foundation, version 3 of the License.
+//
+// This program is distributed in the hope that it will be useful,
+// but WITHOUT ANY WARRANTY; without even the implied warranty of
+// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+// GNU Affero General Public License for more details.
+
 use clap::{Parser, Subcommand};
 
 /// Universal task runner - automatically detects and runs project commands
 #[derive(Parser, Debug, Clone)]
 #[command(name = "devrunner")]
-#[command(author = "PrincePal")]
+#[command(author = "Verseles")]
 #[command(version)]
 #[command(about = "Universal task runner for modern development", long_about = None)]
 #[command(after_help = "SUPPORTED RUNNERS:
@@ -21,13 +32,13 @@ use clap::{Parser, Subcommand};
   Generic:  make
 
 EXAMPLES:
-  devrunner test                      # Run test command using detected runner
+  devrunner test                      # devrunner test command using detected runner
   devrunner build -- --verbose        # Pass extra arguments after --
   devrunner lint --levels=5           # Search up to 5 levels above current dir
   devrunner start --ignore=npm,yarn   # Skip specific runners
-  devrunner deploy --dry-run          # Show command without executing")]
+  devrunner deploy --dry-devrunner          # Show command without executing")]
 pub struct Cli {
-    /// Command to run (e.g., test, build, start)
+    /// Command to devrunner (e.g., test, build, start)
     #[arg(value_name = "COMMAND")]
     pub command: Option<String>,
 
@@ -36,8 +47,8 @@ pub struct Cli {
     pub args: Vec<String>,
 
     /// How many directory levels to search above current dir
-    #[arg(short, long, value_parser = clap::value_parser!(u8).range(0..=10))]
-    pub levels: Option<u8>,
+    #[arg(short, long, default_value = "3", value_parser = clap::value_parser!(u8).range(0..=10))]
+    pub levels: u8,
 
     /// Runners to ignore (comma-separated or multiple flags)
     #[arg(short, long = "ignore", value_delimiter = ',')]
@@ -71,12 +82,6 @@ pub enum Commands {
         #[arg(value_enum)]
         shell: clap_complete::Shell,
     },
-    /// List available scripts/commands for the current project
-    List,
-    /// Show why a specific runner was selected
-    Why,
-    /// Diagnose project setup and detect issues
-    Doctor,
 }
 
 impl Cli {
@@ -135,13 +140,13 @@ mod tests {
     #[test]
     fn test_levels() {
         let cli = Cli::parse_from(["devrunner", "test", "--levels=5"]);
-        assert_eq!(cli.levels, Some(5));
+        assert_eq!(cli.levels, 5);
     }
 
     #[test]
     fn test_default_levels() {
         let cli = Cli::parse_from(["devrunner", "test"]);
-        assert_eq!(cli.levels, None);
+        assert_eq!(cli.levels, 3);
     }
 
     #[test]
@@ -157,7 +162,7 @@ mod tests {
 
     #[test]
     fn test_dry_run() {
-        let cli = Cli::parse_from(["devrunner", "test", "--dry-run"]);
+        let cli = Cli::parse_from(["devrunner", "test", "--dry-devrunner"]);
         assert!(cli.dry_run);
     }
 }

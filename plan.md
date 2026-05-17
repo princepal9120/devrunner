@@ -1,4 +1,4 @@
-# DEVELOPMENT PLAN: "run" CLI
+# DEVELOPMENT PLAN: "devrunner" CLI
 
 ## OBJECTIVE
 
@@ -30,26 +30,26 @@ Conduct incremental research during development when there are doubts about spec
 Check for the presence of key files in the following order of precedence:
 
 **Node.js Ecosystem**:
-1. **Bun**: `bun.lockb` OR `bun.lock` + `package.json` → `bun run <command>`
-2. **PNPM**: `pnpm-lock.yaml` + `package.json` → `pnpm run <command>`
-3. **Yarn**: `yarn.lock` + `package.json` → `yarn run <command>`
-4. **NPM**: `package-lock.json` + `package.json` OR just `package.json` → `npm run <command>`
+1. **Bun**: `bun.lockb` OR `bun.lock` + `package.json` → `bun devrunner <command>`
+2. **PNPM**: `pnpm-lock.yaml` + `package.json` → `pnpm devrunner <command>`
+3. **Yarn**: `yarn.lock` + `package.json` → `yarn devrunner <command>`
+4. **NPM**: `package-lock.json` + `package.json` OR just `package.json` → `npm devrunner <command>`
 
 **Python Ecosystem**:
-5. **UV**: `uv.lock` + `pyproject.toml` → `uv run <command>`
-6. **Poetry**: `poetry.lock` + `pyproject.toml` → `poetry run <command>`
-7. **Pipenv**: `Pipfile.lock` + `Pipfile` → `pipenv run <command>`
+5. **UV**: `uv.lock` + `pyproject.toml` → `uv devrunner <command>`
+6. **Poetry**: `poetry.lock` + `pyproject.toml` → `poetry devrunner <command>`
+7. **Pipenv**: `Pipfile.lock` + `Pipfile` → `pipenv devrunner <command>`
 8. **Pip**: `requirements.txt` OR `pyproject.toml` (without poetry/uv lock) → `python -m <command>`
 
 **Rust Ecosystem**:
 9. **Cargo**: `Cargo.toml` + `Cargo.lock` → `cargo <command>`
 
 **PHP Ecosystem**:
-10. **Composer**: `composer.lock` + `composer.json` → `composer run <command>`
+10. **Composer**: `composer.lock` + `composer.json` → `composer devrunner <command>`
 
 **Go Ecosystem**:
 11. **Taskfile**: `Taskfile.yml` OR `Taskfile.yaml` → `task <command>`
-12. **Go Modules**: `go.mod` + `go.sum` → `go run <command>` (if command looks like a path) OR `go <command>`
+12. **Go Modules**: `go.mod` + `go.sum` → `go devrunner <command>` (if command looks like a path) OR `go <command>`
 
 **Ruby Ecosystem**:
 13. **Bundler**: `Gemfile.lock` + `Gemfile` → `bundle exec <command>`
@@ -66,7 +66,7 @@ Check for the presence of key files in the following order of precedence:
 18. **Mix**: `mix.exs` + `mix.lock` → `mix <command>`
 
 **Swift Ecosystem**:
-19. **Swift Package Manager**: `Package.swift` → `swift run <command>`
+19. **Swift Package Manager**: `Package.swift` → `swift devrunner <command>`
 
 **Zig Ecosystem**:
 20. **Zig Build**: `build.zig` → `zig build <command>`
@@ -119,7 +119,7 @@ Apply similar logic for other ecosystems (Poetry vs UV, Gradle vs Maven when bot
 
 ### Base Syntax
 ```
-run <command> [arguments] [flags] [-- extra-arguments]
+devrunner <command> [arguments] [flags] [-- extra-arguments]
 ```
 
 ### Mandatory Flags
@@ -131,7 +131,7 @@ Implement the following flags with robust parsing:
 - `--ignore tool1 --ignore tool2`: Alternative syntax, multiple flags (both syntaxes must work)
 - `-v, --verbose`: Displays detailed detection info, executed command, found files
 - `-q, --quiet`: Suppresses all messages from the CLI itself (warnings, info), keeps only output of the executed command and critical errors
-- `--dry-run`: Displays the full command that would be executed without executing (useful for debug and scripts)
+- `--dry-devrunner`: Displays the full command that would be executed without executing (useful for debug and scripts)
 - `--update`: Forces check and immediate update installation, blocking (overrides default async behavior)
 - `-h, --help`: Displays full help with list of all supported runners, usage examples
 - `-V, --version`: Displays current CLI version
@@ -140,7 +140,7 @@ Implement the following flags with robust parsing:
 
 Implement support for the standard Unix `--` separator:
 ```
-run test -- --coverage --verbose --reporter=json
+devrunner test -- --coverage --verbose --reporter=json
 ```
 
 All content after `--` must be passed literally to the underlying command, without parsing or modification. Preserve spaces, quotes, and special characters.
@@ -159,7 +159,7 @@ Exception: if the CLI itself fails before execution (command not found, parsing 
 
 ## CONFIGURATION
 
-### Global File: `~/.config/run/config.toml`
+### Global File: `~/.config/devrunner/config.toml`
 
 Create directory structure if it doesn't exist. TOML format:
 
@@ -171,7 +171,7 @@ verbose = false
 quiet = false
 ```
 
-### Local File: `./run.toml`
+### Local File: `./devrunner.toml`
 
 Allows per-project override:
 
@@ -185,8 +185,8 @@ verbose = true
 
 Apply in order (last one overwrites previous):
 1. Hardcoded defaults
-2. `~/.config/run/config.toml` (global)
-3. `./run.toml` (project local)
+2. `~/.config/devrunner/config.toml` (global)
+3. `./devrunner.toml` (project local)
 4. CLI arguments
 
 Implement robust parsing with type and value validation. Silently ignore unknown keys for future compatibility.
@@ -200,25 +200,25 @@ Implement robust parsing with type and value validation. Silently ignore unknown
 **Critical timing**: Execute update process **after** the requested command finishes, **before** the main process exit.
 
 **Execution flow**:
-1. CLI receives `run test`
+1. CLI receives `devrunner test`
 2. Detects appropriate runner
 3. Executes command immediately (stdout/stderr/exit code connected to terminal)
 4. Command finishes
 5. **Before exiting**, spawn detached/daemon child process that:
-   - Queries GitHub Releases API: `GET https://api.github.com/repos/verseles/run/releases/latest`
+   - Queries GitHub Releases API: `GET https://api.github.com/repos/verseles/devrunner/releases/latest`
    - Compares remote `tag_name` with local version (semver parsing)
    - If remote version > local:
      - Detects current platform/architecture
-     - Downloads appropriate asset (e.g., `run-linux-x86_64`, `run-macos-aarch64`, `run-windows-x86_64.exe`)
+     - Downloads appropriate asset (e.g., `devrunner-linux-x86_64`, `devrunner-macos-aarch64`, `devrunner-windows-x86_64.exe`)
      - Verifies asset SHA256 checksum
      - Replaces existing binary atomically (rename temp → target)
-     - Saves update metadata in `~/.config/run/update.json`:
+     - Saves update metadata in `~/.config/devrunner/update.json`:
        ```json
        {
          "updated_at": "2025-12-14T03:00:00Z",
          "from_version": "0.1.0",
          "to_version": "0.2.0",
-         "changelog_url": "https://github.com/verseles/run/releases/tag/v0.2.0"
+         "changelog_url": "https://github.com/verseles/devrunner/releases/tag/v0.2.0"
        }
        ```
    - Daemon process terminates silently
@@ -232,17 +232,17 @@ Implement robust parsing with type and value validation. Silently ignore unknown
 
 On the **next execution** after a successful update:
 
-1. Check existence of `~/.config/run/update.json`
+1. Check existence of `~/.config/devrunner/update.json`
 2. If it exists and `updated_at` is recent (< 24h), display colored message (green):
    ```
-   ✓ run was updated: v0.1.0 → v0.2.0
+   ✓ devrunner was updated: v0.1.0 → v0.2.0
    
    Key changes:
    - Added support for Zig and Swift
    - Improved conflict detection
    - Fixed bug in Windows auto-update
    
-   See full changelog: https://github.com/verseles/run/releases/tag/v0.2.0
+   See full changelog: https://github.com/verseles/devrunner/releases/tag/v0.2.0
    ```
 3. Extract changelog: fetch release via API and use `body` field (summarize first 3-5 lines if too long)
 4. Delete `update.json` after displaying (to avoid repeating)
@@ -284,7 +284,7 @@ codegen-units = 1       # Maximum optimizations (slower compilation)
 
 Final binary must be **< 5MB** for all platforms (x86_64, aarch64).
 
-After release build, run additional `strip` if necessary. Consider `upx` compression for distribution (test if it causes issues with Windows antivirus).
+After release build, devrunner additional `strip` if necessary. Consider `upx` compression for distribution (test if it causes issues with Windows antivirus).
 
 ### Performance
 
@@ -347,9 +347,9 @@ tests/fixtures/
 
 **Scenarios to test**:
 - End-to-end execution with mock command in each project type
-- Recursive search: run from subdirectory and verify it finds runner N levels up
+- Recursive search: devrunner from subdirectory and verify it finds runner N levels up
 - Lockfile conflict: verify appropriate error
-- Flag `--dry-run`: verify output without executing
+- Flag `--dry-devrunner`: verify output without executing
 - Flag `--ignore`: verify runner is skipped
 - Correct exit codes
 
@@ -357,7 +357,7 @@ Use `assert_cmd` crate to test CLI.
 
 #### 3. Cross-platform Tests
 
-Configure CI to run tests on:
+Configure CI to devrunner tests on:
 - **Linux**: Ubuntu latest (x86_64)
 - **macOS**: latest (x86_64 and aarch64 if possible)
 - **Windows**: latest (x86_64)
@@ -401,7 +401,7 @@ Create `.github/workflows/ci.yml`:
 
 #### Job 1: Lint (`lint`)
 
-Run on Ubuntu latest:
+devrunner on Ubuntu latest:
 ```yaml
 - cargo fmt --check
 - cargo clippy --all-targets --all-features -- -D warnings
@@ -427,7 +427,7 @@ Steps:
 
 #### Job 3: Security Audit (`security`)
 
-Run on Ubuntu latest:
+devrunner on Ubuntu latest:
 ```yaml
 - cargo install cargo-audit
 - cargo audit
@@ -540,7 +540,7 @@ Use `owo-colors` or `colored` library for stylized output.
 ```
 🔍 Searching for runner in ./src/components...
 📦 Detected: pnpm (pnpm-lock.yaml)
-✓ Executing: pnpm run test
+✓ Executing: pnpm devrunner test
 
 [command output...]
 
@@ -554,16 +554,16 @@ Respect `NO_COLOR` environment variable (Unix convention) to disable colors.
 Generate completions using `clap_complete`:
 
 **Targets**:
-- Bash: `run.bash`
+- Bash: `devrunner.bash`
 - Zsh: `_run`
-- Fish: `run.fish`
+- Fish: `devrunner.fish`
 - PowerShell: `_run.ps1`
 
 Include in releases. Add instructions in README for installation:
 
 **Bash**:
 ```bash
-sudo cp run.bash /usr/share/bash-completion/completions/run
+sudo cp devrunner.bash /usr/share/bash-completion/completions/devrunner
 ```
 
 **Zsh**:
@@ -573,7 +573,7 @@ cp _run ~/.zsh/completion/
 
 **Fish**:
 ```bash
-cp run.fish ~/.config/fish/completions/
+cp devrunner.fish ~/.config/fish/completions/
 ```
 
 **PowerShell**:
@@ -597,27 +597,27 @@ Create `install.sh` in repository root:
 **Responsibilities**:
 1. Automatically detect OS and architecture (`uname -s`, `uname -m`)
 2. Map to correct asset name in GitHub Release
-3. Download latest release from `https://github.com/verseles/run/releases/latest`
+3. Download latest release from `https://github.com/verseles/devrunner/releases/latest`
 4. Verify SHA256 checksum (download corresponding `.sha256` file)
 5. Install in appropriate directory:
    - Preference: `$HOME/.local/bin` (if exists or create)
    - Fallback: `/usr/local/bin` (if has sudo permission)
-   - Windows: `%USERPROFILE%\.local\bin` or `C:\Program Files\run\`
+   - Windows: `%USERPROFILE%\.local\bin` or `C:\Program Files\devrunner\`
 6. Make executable (`chmod +x` in Unix)
 7. Check if directory is in PATH, warn if not
-8. If run again: detect existing installation and update
+8. If devrunner again: detect existing installation and update
 
 **Update behavior**:
 ```bash
-curl -fsSL https://raw.githubusercontent.com/verseles/run/main/install.sh | bash
+curl -fsSL https://raw.githubusercontent.com/verseles/devrunner/main/install.sh | bash
 ```
 
 Expected output:
 ```
 🔍 Detecting system: Linux x86_64
-📦 Downloading run v0.2.0...
+📦 Downloading devrunner v0.2.0...
 ✓ Checksum verified
-✓ Installed in ~/.local/bin/run
+✓ Installed in ~/.local/bin/devrunner
 ⚠ Add ~/.local/bin to your PATH:
   export PATH="$HOME/.local/bin:$PATH"
 ```
@@ -629,8 +629,8 @@ Also create `install.ps1` for Windows (PowerShell).
 Add support for package managers after stable MVP:
 
 **Priority 2**:
-- `cargo install run-cli` (publish to crates.io)
-- Homebrew tap: `brew install verseles/tap/run`
+- `cargo install devrunner-cli` (publish to crates.io)
+- Homebrew tap: `brew install verseles/tap/devrunner`
 
 **Priority 3**:
 - Scoop (Windows): add to bucket
@@ -653,12 +653,12 @@ Mandatory structure:
 
 #### 1. Hero Section
 ```markdown
-# 🚀 run
+# 🚀 devrunner
 
 > Universal task runner for modern development
 
-[![CI](https://github.com/verseles/run/workflows/CI/badge.svg)](...)
-[![Release](https://img.shields.io/github/v/release/verseles/run)](...)
+[![CI](https://github.com/verseles/devrunner/workflows/CI/badge.svg)](...)
+[![Release](https://img.shields.io/github/v/release/verseles/devrunner)](...)
 [![License](https://img.shields.io/badge/license-AGPL--3.0-blue)](...)
 ```
 
@@ -667,14 +667,14 @@ Include ASCII art logo or image.
 #### 2. Quick Demo
 
 Animated GIF or Asciinema showing:
-- Running `run test` in Node.js project (auto-detects pnpm)
-- Running `run build` in Python project (detects poetry)
+- Running `devrunner test` in Node.js project (auto-detects pnpm)
+- Running `devrunner build` in Python project (detects poetry)
 - Running from subdirectory (recursive search)
 - Lockfile conflict + resolution
 
 Use tool like `asciinema` or `vhs` to record.
 
-#### 3. Why run?
+#### 3. Why devrunner?
 
 List problems it solves:
 - Eliminates "which command do I use in this project?" (npm vs yarn vs pnpm vs bun)
@@ -686,7 +686,7 @@ List problems it solves:
 #### 4. Installation
 
 ```bash
-curl -fsSL https://raw.githubusercontent.com/verseles/run/main/install.sh | bash
+curl -fsSL https://raw.githubusercontent.com/verseles/devrunner/main/install.sh | bash
 ```
 
 List alternative methods (cargo install, homebrew, etc. as available).
@@ -697,8 +697,8 @@ Visual table:
 
 | Ecosystem | Detection | Executed Command |
 |-----------|-----------|------------------|
-| Bun | `bun.lockb` + `package.json` | `bun run <cmd>` |
-| PNPM | `pnpm-lock.yaml` + `package.json` | `pnpm run <cmd>` |
+| Bun | `bun.lockb` + `package.json` | `bun devrunner <cmd>` |
+| PNPM | `pnpm-lock.yaml` + `package.json` | `pnpm devrunner <cmd>` |
 | ... | ... | ... |
 
 Include all 20+ supported runners.
@@ -706,35 +706,35 @@ Include all 20+ supported runners.
 #### 6. Usage Examples
 
 ```bash
-# Run project script
-run test
+# devrunner project script
+devrunner test
 
 # Pass extra arguments
-run build -- --verbose --production
+devrunner build -- --verbose --production
 
-# Run from subdirectory (automatic recursive search)
+# devrunner from subdirectory (automatic recursive search)
 cd src/components
-run lint
+devrunner lint
 
 # Search more levels up
-run deploy --levels=5
+devrunner deploy --levels=5
 
 # Ignore specific runners
-run start --ignore=npm,yarn
+devrunner start --ignore=npm,yarn
 
-# Dry-run mode (see command without executing)
-run build --dry-run
+# Dry-devrunner mode (see command without executing)
+devrunner build --dry-devrunner
 
 # Quiet mode
-run test -q
+devrunner test -q
 
 # Force update
-run --update
+devrunner --update
 ```
 
 #### 7. Configuration
 
-Examples of `~/.config/run/config.toml` and `./run.toml` with explanatory comments.
+Examples of `~/.config/devrunner/config.toml` and `./devrunner.toml` with explanatory comments.
 
 #### 8. Shell Completions
 
@@ -814,7 +814,7 @@ Include `LICENSE` file in root with full license text.
 - ✅ Detection of 20+ runners (Node/Python/Rust/PHP/Go/Ruby/Java/.NET/Elixir/Swift/Zig/Make)
 - ✅ Configurable recursive search (default 3 levels)
 - ✅ Lockfile conflict resolution
-- ✅ Essential flags (--levels, --ignore, -v, -q, --dry-run, --help, --version)
+- ✅ Essential flags (--levels, --ignore, -v, -q, --dry-devrunner, --help, --version)
 - ✅ Argument separator (--)
 - ✅ Auto-update via GitHub Releases (async post-execution)
 - ✅ Update notification with changelog
@@ -838,7 +838,7 @@ Include `LICENSE` file in root with full license text.
 ### Phase 2: Adoption and Polish (Version 0.2.0 - 0.5.0)
 
 **Features**:
-- Publication to crates.io (`cargo install run-cli`)
+- Publication to crates.io (`cargo install devrunner-cli`)
 - Official Homebrew tap
 - Scoop/Chocolatey for Windows
 - Detection cache (avoid re-scan in multiple consecutive executions)
@@ -856,13 +856,13 @@ Include `LICENSE` file in root with full license text.
 ### Phase 3: Extensibility (Version 1.0.0+)
 
 **Advanced Features**:
-- Plugin system (users can add custom runners via `.run-plugins/`)
+- Plugin system (users can add custom runners via `.devrunner-plugins/`)
 - Integration with IDEs (VS Code extension)
-- Container support (detect Dockerfile/docker-compose, run via docker)
+- Container support (detect Dockerfile/docker-compose, devrunner via docker)
 - AI-powered: suggest commands when script doesn't exist
 - Detailed telemetry with web dashboard (opt-in)
-- Custom alias support (`run t` → `run test`)
-- Pre/post-execution hooks (run setup before command)
+- Custom alias support (`devrunner t` → `devrunner test`)
+- Pre/post-execution hooks (devrunner setup before command)
 - Interactive mode (TUI to choose between multiple scripts)
 
 **Criteria for 1.0.0**:
@@ -929,7 +929,7 @@ Include `LICENSE` file in root with full license text.
 
 - Make atomic commits with descriptive messages (Conventional Commits)
 - Manually test on at least 2 different OSs before PR
-- Run `scripts/pre-push.sh` before every push
+- devrunner `scripts/pre-push.sh` before every push
 - Document important architectural decisions (ADRs if necessary)
 - Keep CHANGELOG.md updated
 

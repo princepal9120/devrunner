@@ -1,3 +1,14 @@
+// Copyright (C) 2025 Verseles
+//
+// This program is free software: you can redistribute it and/or modify
+// it under the terms of the GNU Affero General Public License as published
+// by the Free Software Foundation, version 3 of the License.
+//
+// This program is distributed in the hope that it will be useful,
+// but WITHOUT ANY WARRANTY; without even the implied warranty of
+// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+// GNU Affero General Public License for more details.
+
 use owo_colors::OwoColorize;
 use std::env;
 
@@ -68,12 +79,12 @@ pub fn executing(command: &str) {
 /// Print an update notification
 pub fn update_notification(from_version: &str, to_version: &str, changelog: Option<&str>) {
     if colors_disabled() {
-        eprintln!("⬆ run was updated: {} → {}", from_version, to_version);
+        eprintln!("⬆ devrunner was updated: {} → {}", from_version, to_version);
     } else {
         eprintln!(
             "{} {} was updated: {} → {}",
             "⬆".green(),
-            "run".green().bold(),
+            "devrunner".green().bold(),
             from_version.yellow(),
             to_version.green()
         );

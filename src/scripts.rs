@@ -108,8 +108,8 @@ pub fn parse_cargo_targets(project_dir: &Path) -> Option<ScriptList> {
             command: "cargo test".to_string(),
         },
         ProjectScript {
-            name: "run".to_string(),
-            command: "cargo run".to_string(),
+            name: "devrunner".to_string(),
+            command: "cargo devrunner".to_string(),
         },
         ProjectScript {
             name: "check".to_string(),
@@ -300,7 +300,7 @@ clean:
         let names: Vec<&str> = result.scripts.iter().map(|s| s.name.as_str()).collect();
         assert!(names.contains(&"build"));
         assert!(names.contains(&"test"));
-        assert!(names.contains(&"run"));
+        assert!(names.contains(&"devrunner"));
     }
 
     #[test]
