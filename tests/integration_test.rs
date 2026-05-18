@@ -189,7 +189,7 @@ fn test_dry_run_poetry() {
         .args(["test", "--dry-devrunner"])
         .assert()
         .success()
-        .stdout(predicate::str::contains("poetry devrunner test"));
+        .stdout(predicate::str::contains("poetry run test"));
 }
 
 #[test]
@@ -203,7 +203,7 @@ fn test_dry_run_uv() {
         .args(["test", "--dry-devrunner"])
         .assert()
         .success()
-        .stdout(predicate::str::contains("uv devrunner test"));
+        .stdout(predicate::str::contains("uv run test"));
 }
 
 #[test]
@@ -217,7 +217,7 @@ fn test_dry_run_pipenv() {
         .args(["test", "--dry-devrunner"])
         .assert()
         .success()
-        .stdout(predicate::str::contains("pipenv devrunner test"));
+        .stdout(predicate::str::contains("pipenv run test"));
 }
 
 #[test]
@@ -278,7 +278,7 @@ fn test_dry_run_composer() {
         .args(["test", "--dry-devrunner"])
         .assert()
         .success()
-        .stdout(predicate::str::contains("composer devrunner test"));
+        .stdout(predicate::str::contains("composer run test"));
 }
 
 // ============================================================================
@@ -334,7 +334,7 @@ fn test_dry_run_go_run_path() {
         .args(["./cmd/main.go", "--dry-devrunner"])
         .assert()
         .success()
-        .stdout(predicate::str::contains("go devrunner ./cmd/main.go"));
+        .stdout(predicate::str::contains("go run ./cmd/main.go"));
 }
 
 // ============================================================================
@@ -398,7 +398,7 @@ fn test_dry_run_turbo() {
         .args(["build", "--dry-devrunner"])
         .assert()
         .success()
-        .stdout(predicate::str::contains("turbo devrunner build"));
+        .stdout(predicate::str::contains("turbo run build"));
 }
 
 #[test]
@@ -413,7 +413,7 @@ fn test_dry_run_lerna() {
         .args(["test", "--dry-devrunner", "--ignore=npm"])
         .assert()
         .success()
-        .stdout(predicate::str::contains("lerna devrunner test"));
+        .stdout(predicate::str::contains("lerna run test"));
 }
 
 #[test]
@@ -429,7 +429,7 @@ fn test_monorepo_priority_over_npm() {
         .args(["build", "--dry-devrunner"])
         .assert()
         .success()
-        .stdout(predicate::str::contains("turbo devrunner build"));
+        .stdout(predicate::str::contains("turbo run build"));
 }
 
 // ============================================================================
@@ -567,7 +567,7 @@ fn test_dry_run_swift() {
         .args(["MyApp", "--dry-devrunner"])
         .assert()
         .success()
-        .stdout(predicate::str::contains("swift devrunner MyApp"));
+        .stdout(predicate::str::contains("swift run MyApp"));
 }
 
 // ============================================================================
@@ -995,7 +995,7 @@ fn test_npm_script_takes_priority() {
         .args(["build", "--dry-devrunner"])
         .assert()
         .success()
-        .stdout(predicate::str::contains("npm devrunner build"));
+        .stdout(predicate::str::contains("npm run build"));
 }
 
 #[test]

@@ -30,7 +30,7 @@ impl CommandValidator for RustValidator {
             "init",
             "add",
             "remove",
-            "devrunner",
+            "run",
             "r",
             "test",
             "t",

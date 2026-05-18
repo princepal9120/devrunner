@@ -64,31 +64,15 @@ impl CommandValidator for GoValidator {
     fn supports_command(&self, _working_dir: &Path, command: &str) -> CommandSupport {
         // Go has built-in commands
         const BUILTINS: &[&str] = &[
-            "build",
-            "clean",
-            "doc",
-            "env",
-            "fix",
-            "fmt",
-            "generate",
-            "get",
-            "install",
-            "list",
-            "mod",
-            "work",
-            "devrunner",
-            "test",
-            "tool",
-            "version",
-            "vet",
-            "help",
+            "build", "clean", "doc", "env", "fix", "fmt", "generate", "get", "install", "list",
+            "mod", "work", "run", "test", "tool", "version", "vet", "help",
         ];
 
         if BUILTINS.contains(&command) {
             return CommandSupport::Supported;
         }
 
-        // Go is extensible (go devrunner, go generate, etc.), so return Unknown
+        // Go is extensible (go run, go generate, etc.), so return Unknown
         CommandSupport::Unknown
     }
 }
@@ -295,7 +279,7 @@ tasks:
             CommandSupport::Supported
         );
         assert_eq!(
-            validator.supports_command(dir.path(), "devrunner"),
+            validator.supports_command(dir.path(), "run"),
             CommandSupport::Supported
         );
         assert_eq!(

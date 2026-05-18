@@ -37,7 +37,7 @@ impl CommandValidator for MixValidator {
         const BUILTINS: &[&str] = &[
             "compile",
             "test",
-            "devrunner",
+            "run",
             "deps",
             "deps.get",
             "deps.update",

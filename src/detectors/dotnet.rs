@@ -21,7 +21,7 @@ impl CommandValidator for DotNetValidator {
             "build",
             "clean",
             "test",
-            "devrunner",
+            "run",
             "publish",
             "pack",
             "restore",
