@@ -166,6 +166,14 @@ Examples: `dr test`, `dr build`, `dr lint`, `dr dev`
 
 **OpenCode / Codex** (`~/.config/opencode/AGENTS.md` or `~/.codex/AGENTS.md`): same content.
 
+**npx skills** — install devrunner as an agent skill in any project:
+
+```bash
+npx skills add princepal9120/devrunner
+```
+
+This installs [`SKILL.md`](SKILL.md) into `.claude/skills/` (or `.agents/skills/`) so any agent in that project automatically knows to use `dr`.
+
 ## Development
 
 ```bash
