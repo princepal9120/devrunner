@@ -167,7 +167,7 @@ pub fn spawn_background_update(config: &Config) {
         return;
     }
 
-    // Check if we should devrunner based on the interval
+    // Check if we should run based on the interval
     let update_config = config.get_update_config();
     let interval_hours = update_config.get_check_interval_hours();
 

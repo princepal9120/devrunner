@@ -136,7 +136,7 @@ pub fn check_conflicts(
                     .map(|r| r.detected_file.as_str())
                     .collect();
 
-                if !verbose {
+                {
                     output::warning(&format!(
                         "Found {} but only {} is installed. Consider removing: {}",
                         eco_runners
@@ -231,7 +231,7 @@ pub fn execute(
     verbose: bool,
     quiet: bool,
 ) -> Result<RunResult, RunError> {
-    // Check if the tool is installed (skip for dry-devrunner)
+    // Check if the tool is installed (skip for dry-run)
     // Skip check for custom runners as they define their own commands
     if !dry_run && runner.ecosystem != Ecosystem::Custom && !is_tool_installed(&runner.name) {
         return Err(RunError::ToolNotInstalled(format!(
@@ -252,7 +252,7 @@ pub fn execute(
         if !quiet {
             println!("{}", cmd_string);
         }
-        // Return a fake success for dry devrunner
+        // Return a fake success for dry-run
         return Ok(RunResult {
             exit_status: std::process::ExitStatus::default(),
             runner: runner.clone(),

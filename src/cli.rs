@@ -36,9 +36,9 @@ EXAMPLES:
   devrunner build -- --verbose        # Pass extra arguments after --
   devrunner lint --levels=5           # Search up to 5 levels above current dir
   devrunner start --ignore=npm,yarn   # Skip specific runners
-  devrunner deploy --dry-devrunner          # Show command without executing")]
+  devrunner deploy --dry-run          # Show command without executing")]
 pub struct Cli {
-    /// Command to devrunner (e.g., test, build, start)
+    /// Command to run (e.g., test, build, start)
     #[arg(value_name = "COMMAND")]
     pub command: Option<String>,
 
@@ -63,7 +63,7 @@ pub struct Cli {
     pub quiet: bool,
 
     /// Show command without executing
-    #[arg(long = "dry-devrunner", visible_alias = "dry-run")]
+    #[arg(long = "dry-run", visible_alias = "dry-devrunner")]
     pub dry_run: bool,
 
     /// Force immediate update check
@@ -162,7 +162,7 @@ mod tests {
 
     #[test]
     fn test_dry_run() {
-        let cli = Cli::parse_from(["devrunner", "test", "--dry-devrunner"]);
+        let cli = Cli::parse_from(["devrunner", "test", "--dry-run"]);
         assert!(cli.dry_run);
     }
 

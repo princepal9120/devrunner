@@ -75,7 +75,7 @@ Detection is based on lockfiles first (more specific), then manifest files.
 ## Options
 
 ```bash
-devrunner test --dry-devrunner         # Show command without executing
+devrunner test --dry-run         # Show command without executing
 devrunner test --verbose         # Show detection details
 devrunner test --quiet           # Suppress output except errors
 devrunner test --levels=5        # Search up to 5 parent directories (default: 3)

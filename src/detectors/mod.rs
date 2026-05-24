@@ -525,7 +525,7 @@ pub fn detect_all(dir: &Path, ignore_list: &[String]) -> Vec<DetectedRunner> {
         }
     };
 
-    // devrunner all detectors in priority order
+    // Run all detectors in priority order
     add_runners(custom::detect(dir)); // Custom commands (0) - highest priority
     add_runners(monorepo::detect(dir)); // Monorepo tools (0) - highest priority
     add_runners(node::detect(dir)); // Node.js (1-4)
@@ -563,7 +563,7 @@ mod tests {
     #[test]
     fn test_build_command_npm() {
         let runner = DetectedRunner::new("npm", "package.json", Ecosystem::NodeJs, 4);
-        // "test" is a built-in command, so it should devrunner directly
+        // "test" is a built-in command, so it should run directly
         let cmd = runner.build_command("test", &[]);
         assert_eq!(cmd, vec!["npm", "test"]);
     }
@@ -633,7 +633,7 @@ mod tests {
         let cmd = runner.build_command("install", &["requests".to_string()]);
         assert_eq!(cmd, vec!["python", "-m", "pip", "install", "requests"]);
 
-        // devrunner module
+        // run module
         let cmd = runner.build_command("pytest", &[]);
         assert_eq!(cmd, vec!["python", "-m", "pytest"]);
     }
