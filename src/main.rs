@@ -27,7 +27,7 @@ fn main() {
     // Check for internal update flag (used by background updater)
     let args: Vec<String> = env::args().collect();
     if args.len() > 1 && args[1] == "--internal-update-check" {
-        // devrunner update check in background
+        // run update check in background
         let rt = tokio::runtime::Builder::new_current_thread()
             .enable_all()
             .build()
@@ -54,7 +54,12 @@ fn main() {
     // Merge config with CLI arguments
     let verbose = cli.verbose || config.get_verbose();
     let quiet = cli.quiet || config.get_quiet();
-    let max_levels = cli.levels;
+    let max_levels =
+        if matches.value_source("levels") == Some(clap::parser::ValueSource::DefaultValue) {
+            config.get_max_levels()
+        } else {
+            cli.levels
+        };
     let mut ignore_list = config.ignore_tools.clone();
     ignore_list.extend(cli.ignore.clone());
 
@@ -176,15 +181,16 @@ fn main() {
         }
     }
 
-    // Check for conflicts and select runner based on command support
-    let runner = match check_conflicts(&runners, &working_dir, verbose) {
-        Ok(_) => match select_runner(&runners, &command, &working_dir, verbose) {
-            Ok(r) => r,
-            Err(e) => {
-                output::error(&e.to_string());
-                process::exit(e.exit_code());
-            }
-        },
+    // Resolve conflicts, then select runner by command support from the resolved list
+    let resolved_runners = match check_conflicts(&runners, &working_dir, verbose) {
+        Ok(r) => r,
+        Err(e) => {
+            output::error(&e.to_string());
+            process::exit(e.exit_code());
+        }
+    };
+    let runner = match select_runner(&resolved_runners, &command, &working_dir, verbose) {
+        Ok(r) => r,
         Err(e) => {
             output::error(&e.to_string());
             process::exit(e.exit_code());
@@ -208,7 +214,7 @@ fn main() {
         }
     };
 
-    // For dry devrunner, always exit successfully
+    // For dry-run, always exit successfully
     if cli.dry_run {
         process::exit(exit_codes::SUCCESS);
     }

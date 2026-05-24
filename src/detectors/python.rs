@@ -68,7 +68,7 @@ impl CommandValidator for PythonValidator {
             }
         }
 
-        // Python is extensible - uv devrunner / poetry devrunner can also execute
+        // Python is extensible - uv run / poetry run can also execute
         // commands from the virtual environment (pytest, mypy, etc.)
         // So we return Unknown to allow fallback behavior
         CommandSupport::Unknown

@@ -123,13 +123,17 @@ download_binary() {
             if sha256sum -c "$tmp_checksum" --status 2>/dev/null; then
                 print_success "Checksum verified"
             else
-                print_warning "Checksum verification failed (continuing anyway)"
+                print_error "Checksum verification failed — aborting installation"
+                rm -rf "$tmp_dir"
+                exit 1
             fi
         elif command -v shasum &> /dev/null; then
             if shasum -a 256 -c "$tmp_checksum" --status 2>/dev/null; then
                 print_success "Checksum verified"
             else
-                print_warning "Checksum verification failed (continuing anyway)"
+                print_error "Checksum verification failed — aborting installation"
+                rm -rf "$tmp_dir"
+                exit 1
             fi
         else
             print_warning "No checksum tool found, skipping verification"

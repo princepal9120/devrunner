@@ -14,8 +14,10 @@ use crate::http;
 use crate::output;
 use chrono::{DateTime, Duration, Utc};
 use serde::{Deserialize, Serialize};
+use sha2::{Digest, Sha256};
 use std::env;
 use std::fs;
+use tempfile::Builder as TempfileBuilder;
 
 const GITHUB_REPO: &str = "princepal9120/devrunner";
 const UPDATE_TIMEOUT_SECS: u64 = 5;
@@ -167,7 +169,7 @@ pub fn spawn_background_update(config: &Config) {
         return;
     }
 
-    // Check if we should devrunner based on the interval
+    // Check if we should run based on the interval
     let update_config = config.get_update_config();
     let interval_hours = update_config.get_check_interval_hours();
 
@@ -218,6 +220,45 @@ pub fn spawn_background_update(config: &Config) {
     }
 }
 
+/// Verify SHA256 checksum of downloaded bytes against the release .sha256 file.
+/// GitHub checksum format: "<hex>  <filename>"
+async fn verify_checksum(
+    client: &reqwest::Client,
+    bytes: &[u8],
+    checksum_url: &str,
+) -> Result<(), Box<dyn std::error::Error>> {
+    let checksum_resp = client.get(checksum_url).send().await?;
+    let checksum_text = checksum_resp.text().await?;
+    let expected = checksum_text
+        .split_whitespace()
+        .next()
+        .ok_or("Invalid checksum file format")?
+        .to_lowercase();
+
+    let actual = format!("{:x}", Sha256::digest(bytes));
+    if actual != expected {
+        return Err(format!("Checksum mismatch: expected {expected}, got {actual}").into());
+    }
+    Ok(())
+}
+
+/// Write bytes to a secure random temp file in the install directory.
+/// Returns the temp file path (caller is responsible for rename/cleanup).
+fn write_temp_binary(
+    bytes: &[u8],
+    install_dir: &std::path::Path,
+) -> Result<std::path::PathBuf, Box<dyn std::error::Error>> {
+    let temp_file = TempfileBuilder::new()
+        .prefix(".devrunner-update-")
+        .suffix(".tmp")
+        .tempfile_in(install_dir)?;
+    let temp_path = temp_file.path().to_owned();
+    fs::write(&temp_path, bytes)?;
+    // Keep file alive by leaking the handle (it will be renamed/deleted)
+    std::mem::forget(temp_file);
+    Ok(temp_path)
+}
+
 /// Perform the actual update check (called from background process)
 pub async fn perform_update_check() -> Result<(), Box<dyn std::error::Error>> {
     // Write the timestamp immediately to prevent multiple concurrent checks
@@ -262,14 +303,18 @@ pub async fn perform_update_check() -> Result<(), Box<dyn std::error::Error>> {
     let response = client.get(&asset.browser_download_url).send().await?;
     let bytes = response.bytes().await?;
 
+    // Verify SHA256 checksum before touching disk
+    let checksum_url = format!("{}.sha256", &asset.browser_download_url);
+    verify_checksum(&client, &bytes, &checksum_url).await?;
+
     // Get current executable path
     let current_exe = env::current_exe()?;
+    let install_dir = current_exe
+        .parent()
+        .ok_or("Cannot determine install directory")?;
 
-    // Create a temporary file for the new binary
-    let temp_path = current_exe.with_extension("new");
-
-    // Write the new binary
-    fs::write(&temp_path, bytes)?;
+    // Write to a secure random temp file (avoids predictable path race)
+    let temp_path = write_temp_binary(&bytes, install_dir)?;
 
     // Make executable on Unix
     #[cfg(unix)]
@@ -289,7 +334,7 @@ pub async fn perform_update_check() -> Result<(), Box<dyn std::error::Error>> {
         // On Windows, we need to rename the current exe first
         let backup_path = current_exe.with_extension("old");
         let _ = fs::remove_file(&backup_path);
-        fs::rename(&current_exe, &backup_path)?;
+        let _ = fs::rename(&current_exe, &backup_path);
         fs::rename(&temp_path, &current_exe)?;
         let _ = fs::remove_file(&backup_path);
     }
@@ -368,14 +413,24 @@ pub async fn perform_blocking_update(quiet: bool) -> Result<bool, Box<dyn std::e
     let response = client.get(&asset.browser_download_url).send().await?;
     let bytes = response.bytes().await?;
 
+    // Verify SHA256 checksum before touching disk
+    let checksum_url = format!("{}.sha256", &asset.browser_download_url);
+    if !quiet {
+        output::info("Verifying checksum...");
+    }
+    verify_checksum(&client, &bytes, &checksum_url).await?;
+    if !quiet {
+        output::success("Checksum verified");
+    }
+
     // Get current executable path
     let current_exe = env::current_exe()?;
+    let install_dir = current_exe
+        .parent()
+        .ok_or("Cannot determine install directory")?;
 
-    // Create a temporary file for the new binary
-    let temp_path = current_exe.with_extension("new");
-
-    // Write the new binary
-    fs::write(&temp_path, bytes)?;
+    // Write to a secure random temp file (avoids predictable path race)
+    let temp_path = write_temp_binary(&bytes, install_dir)?;
 
     // Make executable on Unix
     #[cfg(unix)]
@@ -394,7 +449,7 @@ pub async fn perform_blocking_update(quiet: bool) -> Result<bool, Box<dyn std::e
     {
         let backup_path = current_exe.with_extension("old");
         let _ = fs::remove_file(&backup_path);
-        fs::rename(&current_exe, &backup_path)?;
+        let _ = fs::rename(&current_exe, &backup_path);
         fs::rename(&temp_path, &current_exe)?;
         let _ = fs::remove_file(&backup_path);
     }

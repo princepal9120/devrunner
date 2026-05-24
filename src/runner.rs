@@ -57,29 +57,39 @@ pub fn search_runners(
 
 /// Check for lockfile conflicts within the same ecosystem
 /// Uses Corepack (packageManager field) to resolve Node.js conflicts if available
+/// Resolve conflicts and return the validated runner list for `select_runner`.
+///
+/// - Custom runners always override everything else.
+/// - Node.js conflicts are resolved via Corepack or installed-tool check; errors on
+///   unresolvable conflicts.
+/// - Non-Node ecosystems with multiple runners emit a warning but keep all runners so
+///   `select_runner` can choose by command support.
 pub fn check_conflicts(
     runners: &[DetectedRunner],
     working_dir: &Path,
     verbose: bool,
-) -> Result<DetectedRunner, RunError> {
+) -> Result<Vec<DetectedRunner>, RunError> {
     if runners.is_empty() {
         return Err(RunError::RunnerNotFound(0));
     }
 
-    // Priority 0 check for custom runners
-    // If a custom runner is detected, it should override conflicts
-    if let Some(custom_runner) = runners.iter().find(|r| r.ecosystem == Ecosystem::Custom) {
+    // Custom runners (priority 0) override everything — return only them.
+    if runners.iter().any(|r| r.ecosystem == Ecosystem::Custom) {
         if verbose {
             output::info("Using custom runner (highest priority)");
         }
-        return Ok(custom_runner.clone());
+        return Ok(runners
+            .iter()
+            .filter(|r| r.ecosystem == Ecosystem::Custom)
+            .cloned()
+            .collect());
     }
 
     if runners.len() == 1 {
-        return Ok(runners[0].clone());
+        return Ok(runners.to_vec());
     }
 
-    // Group runners by ecosystem
+    // Group runners by ecosystem (preserve Vec order = priority order)
     let mut by_ecosystem: HashMap<Ecosystem, Vec<&DetectedRunner>> = HashMap::new();
     for runner in runners {
         by_ecosystem
@@ -88,55 +98,69 @@ pub fn check_conflicts(
             .push(runner);
     }
 
-    // Check for conflicts within ecosystems
+    let mut resolved: Vec<DetectedRunner> = Vec::new();
+
     for (ecosystem, eco_runners) in &by_ecosystem {
-        if eco_runners.len() > 1 && *ecosystem == Ecosystem::NodeJs {
-            // For Node.js ecosystem, try to use Corepack to resolve
-            if let Some(corepack_pm) = node::get_corepack_manager(working_dir) {
-                // Find the runner that matches the Corepack package manager
-                if let Some(runner) = eco_runners.iter().find(|r| r.name == corepack_pm) {
+        if eco_runners.len() == 1 {
+            resolved.push((*eco_runners[0]).clone());
+            continue;
+        }
+
+        match ecosystem {
+            Ecosystem::NodeJs => {
+                // Monorepo tools (priority 0: nx, turbo, lerna) always win — they
+                // are workspace orchestrators, not package managers, so skip the
+                // installed-tool check that applies to npm/yarn/pnpm conflicts.
+                if let Some(mono) = eco_runners.iter().find(|r| r.priority == 0) {
                     if verbose {
                         output::info(&format!(
-                            "Using {} (specified by packageManager in package.json)",
-                            corepack_pm
+                            "Using monorepo tool {} (highest priority)",
+                            mono.name
                         ));
                     }
-                    return Ok((*runner).clone());
-                } else {
-                    // Corepack specifies a PM but we don't have a matching lockfile
-                    if verbose {
+                    resolved.push((*mono).clone());
+                    continue;
+                }
+
+                // Try Corepack resolution first
+                if let Some(corepack_pm) = node::get_corepack_manager(working_dir) {
+                    if let Some(runner) = eco_runners.iter().find(|r| r.name == corepack_pm) {
+                        if verbose {
+                            output::info(&format!(
+                                "Using {} (specified by packageManager in package.json)",
+                                corepack_pm
+                            ));
+                        }
+                        resolved.push((*runner).clone());
+                        continue;
+                    } else if verbose {
                         output::warning(&format!(
                             "packageManager specifies '{}' but no matching lockfile found",
                             corepack_pm
                         ));
                     }
                 }
-            }
 
-            // Check which tools are installed
-            let installed: Vec<&&DetectedRunner> = eco_runners
-                .iter()
-                .filter(|r| is_tool_installed(&r.name))
-                .collect();
-
-            if installed.is_empty() {
-                // None installed - suggest installation
-                let names: Vec<&str> = eco_runners.iter().map(|r| r.name.as_str()).collect();
-                return Err(RunError::ToolNotInstalled(format!(
-                    "None of the detected {} tools are installed: {}. Please install one.",
-                    ecosystem.as_str(),
-                    names.join(", ")
-                )));
-            } else if installed.len() == 1 {
-                // Only one installed - use it with a warning
-                let runner = installed[0];
-                let others: Vec<&str> = eco_runners
+                // Fall back to installed-tool check
+                let installed: Vec<&&DetectedRunner> = eco_runners
                     .iter()
-                    .filter(|r| r.name != runner.name)
-                    .map(|r| r.detected_file.as_str())
+                    .filter(|r| is_tool_installed(&r.name))
                     .collect();
 
-                if !verbose {
+                if installed.is_empty() {
+                    let names: Vec<&str> = eco_runners.iter().map(|r| r.name.as_str()).collect();
+                    return Err(RunError::ToolNotInstalled(format!(
+                        "None of the detected {} tools are installed: {}. Please install one.",
+                        ecosystem.as_str(),
+                        names.join(", ")
+                    )));
+                } else if installed.len() == 1 {
+                    let runner = installed[0];
+                    let others: Vec<&str> = eco_runners
+                        .iter()
+                        .filter(|r| r.name != runner.name)
+                        .map(|r| r.detected_file.as_str())
+                        .collect();
                     output::warning(&format!(
                         "Found {} but only {} is installed. Consider removing: {}",
                         eco_runners
@@ -147,29 +171,43 @@ pub fn check_conflicts(
                         runner.name,
                         others.join(", ")
                     ));
+                    resolved.push((*runner).clone());
+                } else {
+                    let lockfiles: Vec<&str> = eco_runners
+                        .iter()
+                        .map(|r| r.detected_file.as_str())
+                        .collect();
+                    let tools: Vec<&str> = installed.iter().map(|r| r.name.as_str()).collect();
+                    return Err(RunError::LockfileConflict(format!(
+                        "Detected {} with multiple lockfiles ({}) and multiple tools installed ({}).\nAction needed: Remove the outdated lockfile or use --ignore=<tool>",
+                        ecosystem.as_str(),
+                        lockfiles.join(", "),
+                        tools.join(", ")
+                    )));
                 }
-
-                return Ok((*runner).clone());
-            } else {
-                // Multiple tools installed - error
-                let lockfiles: Vec<&str> = eco_runners
-                    .iter()
-                    .map(|r| r.detected_file.as_str())
-                    .collect();
-                let tools: Vec<&str> = installed.iter().map(|r| r.name.as_str()).collect();
-
-                return Err(RunError::LockfileConflict(format!(
-                    "Detected {} with multiple lockfiles ({}) and multiple tools installed ({}).\nAction needed: Remove the outdated lockfile or use --ignore=<tool>",
+            }
+            _ => {
+                // Non-Node ecosystems: warn and keep all (select_runner picks by command support)
+                output::warning(&format!(
+                    "Multiple {} runners detected ({}). Using highest priority: {}.",
                     ecosystem.as_str(),
-                    lockfiles.join(", "),
-                    tools.join(", ")
-                )));
+                    eco_runners
+                        .iter()
+                        .map(|r| r.name.as_str())
+                        .collect::<Vec<_>>()
+                        .join(", "),
+                    eco_runners[0].name
+                ));
+                for runner in eco_runners {
+                    resolved.push((*runner).clone());
+                }
             }
         }
     }
 
-    // No conflicts - return highest priority runner
-    Ok(runners[0].clone())
+    // Restore priority order
+    resolved.sort_by_key(|r| r.priority);
+    Ok(resolved)
 }
 
 pub fn select_runner(
@@ -231,7 +269,7 @@ pub fn execute(
     verbose: bool,
     quiet: bool,
 ) -> Result<RunResult, RunError> {
-    // Check if the tool is installed (skip for dry-devrunner)
+    // Check if the tool is installed (skip for dry-run)
     // Skip check for custom runners as they define their own commands
     if !dry_run && runner.ecosystem != Ecosystem::Custom && !is_tool_installed(&runner.name) {
         return Err(RunError::ToolNotInstalled(format!(
@@ -252,7 +290,7 @@ pub fn execute(
         if !quiet {
             println!("{}", cmd_string);
         }
-        // Return a fake success for dry devrunner
+        // Return a fake success for dry-run
         return Ok(RunResult {
             exit_status: std::process::ExitStatus::default(),
             runner: runner.clone(),
@@ -342,7 +380,8 @@ mod tests {
             4,
         )];
         let result = check_conflicts(&runners, dir.path(), false).unwrap();
-        assert_eq!(result.name, "npm");
+        assert_eq!(result.len(), 1);
+        assert_eq!(result[0].name, "npm");
     }
 
     #[test]
@@ -353,8 +392,10 @@ mod tests {
             DetectedRunner::new("cargo", "Cargo.toml", Ecosystem::Rust, 9),
         ];
         let result = check_conflicts(&runners, dir.path(), false).unwrap();
-        // Should return highest priority
-        assert_eq!(result.name, "npm");
+        // Both ecosystems kept; sorted by priority (npm=4 < cargo=9)
+        assert_eq!(result.len(), 2);
+        assert_eq!(result[0].name, "npm");
+        assert_eq!(result[1].name, "cargo");
     }
 
     #[test]
@@ -372,9 +413,10 @@ mod tests {
             DetectedRunner::new("npm", "package-lock.json", Ecosystem::NodeJs, 4),
         ];
 
-        // Corepack should resolve to pnpm
+        // Corepack should resolve to pnpm; only pnpm returned
         let result = check_conflicts(&runners, dir.path(), false).unwrap();
-        assert_eq!(result.name, "pnpm");
+        assert_eq!(result.len(), 1);
+        assert_eq!(result[0].name, "pnpm");
     }
 
     #[test]
@@ -385,8 +427,9 @@ mod tests {
             DetectedRunner::new("rake", "Rakefile", Ecosystem::Ruby, 14),
         ];
 
-        // Should not throw a LockfileConflict for non-NodeJs ecosystems
+        // Non-Node: both returned (with a warning), sorted by priority
         let result = check_conflicts(&runners, dir.path(), false).unwrap();
-        assert_eq!(result.name, "bundler"); // Higher priority wins
+        assert_eq!(result.len(), 2);
+        assert_eq!(result[0].name, "bundler"); // priority 13 wins
     }
 }

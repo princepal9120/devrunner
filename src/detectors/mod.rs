@@ -30,7 +30,7 @@ use std::collections::HashMap;
 use std::path::Path;
 use std::sync::Arc;
 
-// Built-in commands that should be devrunner directly without "devrunner"
+// Built-in commands that run directly without the "run" subcommand
 const NPM_BUILTINS: &[&str] = &[
     "install",
     "i",
@@ -102,7 +102,7 @@ const YARN_BUILTINS: &[&str] = &[
     "policies",
     "publish",
     "remove",
-    "devrunner",
+    "run",
     "set",
     "stage",
     "tag",
@@ -152,7 +152,7 @@ const PNPM_BUILTINS: &[&str] = &[
     "remove",
     "rm",
     "root",
-    "devrunner",
+    "run",
     "server",
     "setup",
     "start",
@@ -169,22 +169,8 @@ const PNPM_BUILTINS: &[&str] = &[
 ];
 
 const BUN_BUILTINS: &[&str] = &[
-    "add",
-    "bun",
-    "create",
-    "discord",
-    "help",
-    "init",
-    "install",
-    "link",
-    "pm",
-    "remove",
-    "rm",
-    "devrunner",
-    "test",
-    "update",
-    "upgrade",
-    "x",
+    "add", "bun", "create", "discord", "help", "init", "install", "link", "pm", "remove", "rm",
+    "run", "test", "update", "upgrade", "x",
 ];
 
 const PIP_BUILTINS: &[&str] = &[
@@ -372,52 +358,36 @@ impl DetectedRunner {
                 if BUN_BUILTINS.contains(&task) {
                     vec!["bun".to_string(), task.to_string()]
                 } else {
-                    vec!["bun".to_string(), "devrunner".to_string(), task.to_string()]
+                    vec!["bun".to_string(), "run".to_string(), task.to_string()]
                 }
             }
             "pnpm" => {
                 if PNPM_BUILTINS.contains(&task) {
                     vec!["pnpm".to_string(), task.to_string()]
                 } else {
-                    vec![
-                        "pnpm".to_string(),
-                        "devrunner".to_string(),
-                        task.to_string(),
-                    ]
+                    vec!["pnpm".to_string(), "run".to_string(), task.to_string()]
                 }
             }
             "yarn" => {
                 if YARN_BUILTINS.contains(&task) {
                     vec!["yarn".to_string(), task.to_string()]
                 } else {
-                    vec![
-                        "yarn".to_string(),
-                        "devrunner".to_string(),
-                        task.to_string(),
-                    ]
+                    vec!["yarn".to_string(), "run".to_string(), task.to_string()]
                 }
             }
             "npm" => {
                 if NPM_BUILTINS.contains(&task) {
                     vec!["npm".to_string(), task.to_string()]
                 } else {
-                    vec!["npm".to_string(), "devrunner".to_string(), task.to_string()]
+                    vec!["npm".to_string(), "run".to_string(), task.to_string()]
                 }
             }
 
             // Python ecosystem
-            "rye" => vec!["rye".to_string(), "devrunner".to_string(), task.to_string()],
-            "uv" => vec!["uv".to_string(), "devrunner".to_string(), task.to_string()],
-            "poetry" => vec![
-                "poetry".to_string(),
-                "devrunner".to_string(),
-                task.to_string(),
-            ],
-            "pipenv" => vec![
-                "pipenv".to_string(),
-                "devrunner".to_string(),
-                task.to_string(),
-            ],
+            "rye" => vec!["rye".to_string(), "run".to_string(), task.to_string()],
+            "uv" => vec!["uv".to_string(), "run".to_string(), task.to_string()],
+            "poetry" => vec!["poetry".to_string(), "run".to_string(), task.to_string()],
+            "pipenv" => vec!["pipenv".to_string(), "run".to_string(), task.to_string()],
             "pip" => {
                 if PIP_BUILTINS.contains(&task) {
                     vec![
@@ -439,29 +409,21 @@ impl DetectedRunner {
                 if deno::DENO_BUILTIN.contains(&task) {
                     vec!["deno".to_string(), task.to_string()]
                 } else if task.contains('/') || task.ends_with(".ts") || task.ends_with(".js") {
-                    vec![
-                        "deno".to_string(),
-                        "devrunner".to_string(),
-                        task.to_string(),
-                    ]
+                    vec!["deno".to_string(), "run".to_string(), task.to_string()]
                 } else {
                     vec!["deno".to_string(), "task".to_string(), task.to_string()]
                 }
             }
 
             // PHP ecosystem
-            "composer" => vec![
-                "composer".to_string(),
-                "devrunner".to_string(),
-                task.to_string(),
-            ],
+            "composer" => vec!["composer".to_string(), "run".to_string(), task.to_string()],
 
             // Go ecosystem
             "task" => vec!["task".to_string(), task.to_string()],
             "go" => {
                 // Check if task looks like a path (contains / or ends with .go)
                 if task.contains('/') || task.ends_with(".go") {
-                    vec!["go".to_string(), "devrunner".to_string(), task.to_string()]
+                    vec!["go".to_string(), "run".to_string(), task.to_string()]
                 } else {
                     vec!["go".to_string(), task.to_string()]
                 }
@@ -482,11 +444,7 @@ impl DetectedRunner {
             "mix" => vec!["mix".to_string(), task.to_string()],
 
             // Swift ecosystem
-            "swift" => vec![
-                "swift".to_string(),
-                "devrunner".to_string(),
-                task.to_string(),
-            ],
+            "swift" => vec!["swift".to_string(), "run".to_string(), task.to_string()],
 
             // Zig ecosystem
             "zig" => vec!["zig".to_string(), "build".to_string(), task.to_string()],
@@ -496,16 +454,8 @@ impl DetectedRunner {
 
             // Monorepo orchestration tools
             "nx" => vec!["nx".to_string(), task.to_string()],
-            "turbo" => vec![
-                "turbo".to_string(),
-                "devrunner".to_string(),
-                task.to_string(),
-            ],
-            "lerna" => vec![
-                "lerna".to_string(),
-                "devrunner".to_string(),
-                task.to_string(),
-            ],
+            "turbo" => vec!["turbo".to_string(), "run".to_string(), task.to_string()],
+            "lerna" => vec!["lerna".to_string(), "run".to_string(), task.to_string()],
 
             // Generic
             "make" => vec!["make".to_string(), task.to_string()],
@@ -575,7 +525,7 @@ pub fn detect_all(dir: &Path, ignore_list: &[String]) -> Vec<DetectedRunner> {
         }
     };
 
-    // devrunner all detectors in priority order
+    // Run all detectors in priority order
     add_runners(custom::detect(dir)); // Custom commands (0) - highest priority
     add_runners(monorepo::detect(dir)); // Monorepo tools (0) - highest priority
     add_runners(node::detect(dir)); // Node.js (1-4)
@@ -613,7 +563,7 @@ mod tests {
     #[test]
     fn test_build_command_npm() {
         let runner = DetectedRunner::new("npm", "package.json", Ecosystem::NodeJs, 4);
-        // "test" is a built-in command, so it should devrunner directly
+        // "test" is a built-in command, so it should run directly
         let cmd = runner.build_command("test", &[]);
         assert_eq!(cmd, vec!["npm", "test"]);
     }
@@ -621,9 +571,9 @@ mod tests {
     #[test]
     fn test_build_command_npm_run() {
         let runner = DetectedRunner::new("npm", "package.json", Ecosystem::NodeJs, 4);
-        // "custom-script" is NOT a built-in command, so it should use "devrunner"
+        // "custom-script" is NOT a built-in command, so it should use "run"
         let cmd = runner.build_command("custom-script", &[]);
-        assert_eq!(cmd, vec!["npm", "devrunner", "custom-script"]);
+        assert_eq!(cmd, vec!["npm", "run", "custom-script"]);
     }
 
     #[test]
@@ -642,7 +592,7 @@ mod tests {
 
         // Custom script
         let cmd = runner.build_command("my-script", &[]);
-        assert_eq!(cmd, vec!["yarn", "devrunner", "my-script"]);
+        assert_eq!(cmd, vec!["yarn", "run", "my-script"]);
     }
 
     #[test]
@@ -654,7 +604,7 @@ mod tests {
 
         // Custom script
         let cmd = runner.build_command("dev", &[]);
-        assert_eq!(cmd, vec!["pnpm", "devrunner", "dev"]);
+        assert_eq!(cmd, vec!["pnpm", "run", "dev"]);
     }
 
     #[test]
@@ -666,14 +616,14 @@ mod tests {
 
         // Custom script
         let cmd = runner.build_command("foo", &[]);
-        assert_eq!(cmd, vec!["bun", "devrunner", "foo"]);
+        assert_eq!(cmd, vec!["bun", "run", "foo"]);
     }
 
     #[test]
     fn test_build_command_rye() {
         let runner = DetectedRunner::new("rye", "pyproject.toml", Ecosystem::Python, 5);
         let cmd = runner.build_command("start", &[]);
-        assert_eq!(cmd, vec!["rye", "devrunner", "start"]);
+        assert_eq!(cmd, vec!["rye", "run", "start"]);
     }
 
     #[test]
@@ -683,7 +633,7 @@ mod tests {
         let cmd = runner.build_command("install", &["requests".to_string()]);
         assert_eq!(cmd, vec!["python", "-m", "pip", "install", "requests"]);
 
-        // devrunner module
+        // run module
         let cmd = runner.build_command("pytest", &[]);
         assert_eq!(cmd, vec!["python", "-m", "pytest"]);
     }
@@ -699,7 +649,7 @@ mod tests {
     fn test_build_command_go_path() {
         let runner = DetectedRunner::new("go", "go.mod", Ecosystem::Go, 12);
         let cmd = runner.build_command("./cmd/main.go", &[]);
-        assert_eq!(cmd, vec!["go", "devrunner", "./cmd/main.go"]);
+        assert_eq!(cmd, vec!["go", "run", "./cmd/main.go"]);
     }
 
     #[test]

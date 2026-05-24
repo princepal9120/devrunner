@@ -62,10 +62,15 @@ which = "7.0"
 # Command parsing
 shell-words = "1.1"
 
+# Hashing (SHA256 for update integrity verification)
+sha2 = "0.10"
+
+# Secure temp files (for safe binary replacement during updates)
+tempfile = "3.14"
+
 [dev-dependencies]
 assert_cmd = "2.0"
 predicates = "3.1"
-tempfile = "3.14"
 proptest = "1.5"
 
 [profile.release]

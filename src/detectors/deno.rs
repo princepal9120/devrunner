@@ -17,7 +17,7 @@ use std::sync::Arc;
 pub struct DenoValidator;
 
 pub static DENO_BUILTIN: &[&str] = &[
-    "devrunner",
+    "run",
     "test",
     "fmt",
     "lint",
@@ -300,7 +300,7 @@ mod tests {
         let dir = tempdir().unwrap();
         let validator = DenoValidator;
         assert_eq!(
-            validator.supports_command(dir.path(), "devrunner"),
+            validator.supports_command(dir.path(), "run"),
             CommandSupport::Supported
         );
         assert_eq!(
