@@ -181,15 +181,16 @@ fn main() {
         }
     }
 
-    // Check for conflicts and select runner based on command support
-    let runner = match check_conflicts(&runners, &working_dir, verbose) {
-        Ok(_) => match select_runner(&runners, &command, &working_dir, verbose) {
-            Ok(r) => r,
-            Err(e) => {
-                output::error(&e.to_string());
-                process::exit(e.exit_code());
-            }
-        },
+    // Resolve conflicts, then select runner by command support from the resolved list
+    let resolved_runners = match check_conflicts(&runners, &working_dir, verbose) {
+        Ok(r) => r,
+        Err(e) => {
+            output::error(&e.to_string());
+            process::exit(e.exit_code());
+        }
+    };
+    let runner = match select_runner(&resolved_runners, &command, &working_dir, verbose) {
+        Ok(r) => r,
         Err(e) => {
             output::error(&e.to_string());
             process::exit(e.exit_code());

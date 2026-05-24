@@ -51,6 +51,7 @@ impl RunError {
     pub fn exit_code(&self) -> i32 {
         match self {
             RunError::RunnerNotFound(_) => exit_codes::RUNNER_NOT_FOUND,
+            RunError::CommandNotSupported(_, _) => exit_codes::RUNNER_NOT_FOUND,
             RunError::LockfileConflict(_) => exit_codes::LOCKFILE_CONFLICT,
             RunError::ToolNotInstalled(_) => exit_codes::TOOL_NOT_INSTALLED,
             _ => exit_codes::GENERIC_ERROR,
