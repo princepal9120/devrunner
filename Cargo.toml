@@ -57,7 +57,7 @@ anyhow = "1.0"
 chrono = { version = "0.4", features = ["serde"] }
 
 # For which command detection
-which = "7.0"
+which = "8.0"
 
 # Command parsing
 shell-words = "1.1"
