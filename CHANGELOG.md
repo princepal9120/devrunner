@@ -7,6 +7,8 @@ and this project follows [Semantic Versioning](https://semver.org/spec/v2.0.0.ht
 
 ## [Unreleased]
 
+## [0.6.1] - 2026-05-26
+
 ### Changed
 - Fixed CLI/config precedence so `devrunner.toml` and global config `max_levels` are applied when `--levels` is not provided.
 - Aligned `list`, `why`, and `doctor` runner selection with the same conflict-resolution path used by command execution.
