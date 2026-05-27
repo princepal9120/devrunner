@@ -7,6 +7,15 @@ and this project follows [Semantic Versioning](https://semver.org/spec/v2.0.0.ht
 
 ## [Unreleased]
 
+## [0.6.2] - 2026-05-27
+
+### Fixed
+- Fixed Unix installer checksum verification by downloading release assets under the filename referenced by published `.sha256` files.
+- Hardened the macOS `shasum` fallback to compare expected and actual SHA256 hashes directly.
+
+### Added
+- Added a Unix installer regression test for release checksum files that reference platform asset filenames.
+
 ## [0.6.1] - 2026-05-26
 
 ### Changed
