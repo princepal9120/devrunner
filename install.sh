@@ -105,11 +105,12 @@ download_binary() {
     print_info "Downloading ${asset_name}..."
 
     local tmp_dir=$(mktemp -d)
+    local tmp_asset="${tmp_dir}/${asset_name}"
     local tmp_binary="${tmp_dir}/${BINARY_NAME}"
     local tmp_checksum="${tmp_dir}/${asset_name}.sha256"
 
     # Download binary
-    if ! curl -sL "$download_url" -o "$tmp_binary"; then
+    if ! curl -sL "$download_url" -o "$tmp_asset"; then
         print_error "Failed to download binary"
         rm -rf "$tmp_dir"
         exit 1
@@ -123,15 +124,18 @@ download_binary() {
             if sha256sum -c "$tmp_checksum" --status 2>/dev/null; then
                 print_success "Checksum verified"
             else
-                print_error "Checksum verification failed — aborting installation"
+                print_error "Checksum verification failed - aborting installation"
                 rm -rf "$tmp_dir"
                 exit 1
             fi
         elif command -v shasum &> /dev/null; then
-            if shasum -a 256 -c "$tmp_checksum" --status 2>/dev/null; then
+            local expected actual
+            expected=$(awk '{print $1}' "$tmp_checksum" | tr '[:upper:]' '[:lower:]')
+            actual=$(shasum -a 256 "$tmp_asset" | awk '{print $1}' | tr '[:upper:]' '[:lower:]')
+            if [ "$expected" = "$actual" ]; then
                 print_success "Checksum verified"
             else
-                print_error "Checksum verification failed — aborting installation"
+                print_error "Checksum verification failed - aborting installation"
                 rm -rf "$tmp_dir"
                 exit 1
             fi
@@ -148,7 +152,7 @@ download_binary() {
 
     # Install binary
     print_info "Installing to ${INSTALL_DIR}/${BINARY_NAME}..."
-    mv "$tmp_binary" "${INSTALL_DIR}/${BINARY_NAME}"
+    mv "$tmp_asset" "${INSTALL_DIR}/${BINARY_NAME}"
     chmod +x "${INSTALL_DIR}/${BINARY_NAME}"
 
     # Create dr symlink
