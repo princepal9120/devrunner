@@ -1,43 +1,61 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="en" data-theme="dark">
 
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Documentation - devrunner</title>
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link
-        href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap"
-        rel="stylesheet">
+    <meta name="theme-color" content="#000000">
+    <link rel="icon" href="logo.svg" type="image/svg+xml">
+    <title>Documentation — devrunner</title>
+    <meta name="description" content="Technical reference and guides for configuring and executing devrunner.">
+    
     <link rel="stylesheet" href="style.css">
-    <script src="https://unpkg.com/lucide@latest"></script>
 </head>
 
 <body>
 
-    <div class="docs-layout">
-        <!-- Sidebar -->
-        <aside class="docs-sidebar">
-            <div class="logo"
-                style="margin-bottom: 2rem; display: flex; justify-content: space-between; align-items: center;">
-                <a href="index.html"
-                    style="display: flex; gap: 10px; align-items: center; color: var(--color-text-main); text-decoration: none;">
-                    <img src="logo.svg" alt="Logo" width="28" height="28" style="border-radius: 5px;">
-                    <span style="font-weight: 700; font-size: 1.1rem;">devrunner</span>
-                </a>
-                <button class="theme-toggle" onclick="toggleTheme()" aria-label="Toggle Theme"
-                    style="margin: 0; width: 32px; height: 32px;">
-                    <i data-lucide="moon" width="16" height="16" class="moon-icon"></i>
-                    <i data-lucide="sun" width="16" height="16" class="sun-icon" style="display:none"></i>
-                </button>
-                <!-- Mobile Sidebar Toggle -->
-                <button class="mobile-menu-btn" onclick="toggleMobileMenu()" aria-label="Toggle Menu"
-                    style="margin-left: 1rem; width: 32px; height: 32px; align-items: center; justify-content: center; border: 1px solid var(--color-border); border-radius: 8px;">
-                    <i data-lucide="menu" width="16" height="16"></i>
-                </button>
+    <!-- Glowing Background Orbs -->
+    <div class="glow-bg">
+        <div class="glow-orb orb-1"></div>
+        <div class="glow-orb orb-2" style="bottom: 0; left: 10%;"></div>
+    </div>
+
+    <!-- Floating Glass Navigation -->
+    <div class="nav-container">
+        <nav class="navbar" style="max-width: 1200px;">
+            <a href="index.html" class="logo">
+                <div class="logo-symbol"></div>
+                <span style="letter-spacing: -0.04em;">devrunner</span>
+            </a>
+
+            <div class="nav-links">
+                <a href="docs.html" class="nav-link" style="color: var(--text-primary);">Documentation</a>
+                <a href="https://github.com/princepal9120/devrunner" target="_blank" class="nav-link">GitHub</a>
             </div>
 
+            <div class="nav-cta">
+                <button onclick="toggleTheme()" aria-label="Toggle Theme" style="background: transparent; border: none; cursor: pointer; color: var(--text-primary); display: flex; align-items: center; margin-right: 0.5rem;">
+                    <svg class="moon-icon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="display: none;"><path d="M12 3a6 6 0 0 0 9 9 9 9 0 1 1-9-9Z"/></svg>
+                    <svg class="sun-icon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="display: none;"><circle cx="12" cy="12" r="4"/><path d="M12 2v2"/><path d="M12 20v2"/><path d="m4.93 4.93 1.41 1.41"/><path d="m17.66 17.66 1.41 1.41"/><path d="M2 12h2"/><path d="M20 12h2"/><path d="m6.34 17.66-1.41 1.41"/><path d="m19.07 4.93-1.41 1.41"/></svg>
+                </button>
+                <button class="mobile-menu-btn" onclick="toggleMobileMenu()" aria-label="Toggle Sidebar" style="background: transparent; border: none; cursor: pointer; color: var(--text-primary); margin-right: 0.5rem;">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="4" x2="20" y1="12" y2="12"/><line x1="4" x2="20" y1="6" y2="6"/><line x1="4" x2="20" y1="18" y2="18"/></svg>
+                </button>
+                <a href="https://github.com/princepal9120/devrunner" target="_blank" class="btn btn-secondary">
+                    Star
+                    <span class="btn-arrow">
+                        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><path d="M5 12h14"/><path d="m12 5 7 7-7 7"/></svg>
+                    </span>
+                </a>
+            </div>
+        </nav>
+    </div>
+
+    <!-- Main Docs Layout -->
+    <div class="container docs-layout">
+        
+        <!-- Left Sidebar Navigation -->
+        <aside class="docs-sidebar">
             <nav>
                 <div class="docs-nav-group">
                     <div class="docs-nav-title">Getting Started</div>
@@ -50,119 +68,149 @@
                     <div class="docs-nav-title">Guides</div>
                     <a href="#supported-tools" class="docs-nav-item">Supported Tools</a>
                     <a href="#configuration" class="docs-nav-item">Configuration</a>
-                    <a href="#troubleshooting" class="docs-nav-item">Troubleshooting</a>
+                    <a href="#ai-integration" class="docs-nav-item">AI Integration</a>
                 </div>
             </nav>
         </aside>
 
-        <!-- Content -->
+        <!-- Right Content Area -->
         <main class="docs-content">
             <article class="docs-article">
-
+                
                 <header class="docs-header">
-                    <h1>Documentation</h1>
-                    <p class="hero-subtitle" style="margin: 0; text-align: left;">Everything you need to set up and
-                        customize devrunner.</p>
+                    <span style="font-size: 0.8rem; font-weight: 700; color: var(--brand-accent); text-transform: uppercase; letter-spacing: 0.1em;">Documentation</span>
+                    <h1 style="margin-top: 0.5rem;">Universal Task Resolution</h1>
+                    <p class="docs-subtitle">Learn how to set up, execute, and extend devrunner in your development workflows.</p>
                 </header>
 
-                <section id="introduction">
+                <section id="introduction" class="docs-section">
                     <h2>Introduction</h2>
-                    <p><strong>devrunner</strong> is a universal task runner designed to eliminate the mental context
-                        switching between different project environments. It serves as a unified interface for your
-                        build tools.</p>
-                    <p>Instead of remembering <code>npm devrunner build</code>, <code>mvn package</code>, or
-                        <code>cargo build</code>, you simply devrunner <code>devrunner build</code>. The tool automatically
-                        detects the project type and invokes the correct command.
-                    </p>
+                    <p><strong>devrunner</strong> (aliased as <code>dr</code>) is an ultra-fast, zero-configuration task runner written in Rust. It serves as an intelligent proxy that detects lockfiles and manifest structures inside directories and invokes the respective system command line automatically.</p>
+                    <p>Instead of manually switching context between <code>npm run dev</code>, <code>poetry run pytest</code>, or <code>cargo build</code>, devrunner exposes a unified API:</p>
+                    <pre><code>dr dev
+dr test
+dr build</code></pre>
+                    
+                    <div class="alert alert-note">
+                        <strong>Architectural Note:</strong> Cold starts execute under <strong>5ms</strong>, causing absolute zero bottleneck to your native task tools.
+                    </div>
                 </section>
 
-                <section id="installation">
+                <section id="installation" class="docs-section">
                     <h2>Installation</h2>
-                    <p>Install devrunner on your local machine. It comes as a single binary with zero dependencies.</p>
-
-                    <div class="install-widget">
-                        <div class="install-tabs">
-                            <div class="install-tab active" onclick="switchTab('mac', this)">macOS / Linux</div>
-                            <div class="install-tab" onclick="switchTab('win', this)">Windows</div>
-                            <div class="install-tab" onclick="switchTab('cargo', this)">Rust</div>
+                    <p>Install devrunner onto your local system as a single compiled binary without node_modules or interpreter dependencies.</p>
+                    
+                    <!-- Double-Bezel Installation tab component -->
+                    <div class="install-card">
+                        <div class="install-nav">
+                            <span class="install-tab-btn active" onclick="switchDocsInstallTab('mac', this)">macOS / Linux</span>
+                            <span class="install-tab-btn" onclick="switchDocsInstallTab('win', this)">Windows</span>
+                            <span class="install-tab-btn" onclick="switchDocsInstallTab('cargo', this)">Rust Cargo</span>
+                            <span class="install-tab-btn" onclick="switchDocsInstallTab('npx', this)">npx skill</span>
                         </div>
-                        <div class="install-code">
-                            <span id="cmd-text">curl -fsSL
-                                https://raw.githubusercontent.com/princepal9120/devrunner/main/install.sh | bash</span>
-                            <i data-lucide="copy" class="copy-icon" onclick="copyCode()"></i>
+                        <div class="install-payload">
+                            <span id="install-cmd-payload">curl -fsSL install.cat/princepal9120/devrunner | bash</span>
+                            <div class="install-copy-btn" onclick="copyDocsCommand()" aria-label="Copy to Clipboard">
+                                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect width="14" height="14" x="8" y="8" rx="2" ry="2"/><path d="M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2"/></svg>
+                            </div>
                         </div>
                     </div>
                 </section>
 
-                <section id="usage">
+                <section id="usage" class="docs-section">
                     <h2>Usage</h2>
-                    <p>The standard syntax is:</p>
-                    <pre><code>devrunner [command] [args...]</code></pre>
+                    <p>Execute the proxy CLI using the short alias <code>dr</code> or <code>devrunner</code>:</p>
+                    <pre><code>dr &lt;command&gt; [args...]</code></pre>
+                    
+                    <h3>Common Drivers</h3>
+                    <p>Standard task routing maps identically to detected targets:</p>
+                    <pre><code>dr test                 # Routes to test frameworks
+dr build                # Initiates production packaging
+dr lint                 # Executes code static analysis
+dr dev                  # Launches dev server configurations</code></pre>
 
-                    <h3>Basic Workflow</h3>
-                    <p>Navigate to any project directory (or subdirectory) and devrunner commands:</p>
-
-                    <pre><code># devrunner your test suite
-$ devrunner test
-
-# Start development server
-$ devrunner start
-
-# Lint codebase
-$ devrunner lint</code></pre>
-
-                    <h3>Passing Arguments</h3>
-                    <p>To pass flags directly to the underlying tool, use the <code>--</code> separator:</p>
-                    <pre><code># Equivalent to "npm devrunner test -- --watch"
-$ devrunner test -- --watch</code></pre>
+                    <h3>Custom parameters</h3>
+                    <p>Inject custom flags down directly to the underlying manager utilizing the <code>--</code> separator:</p>
+                    <pre><code># Evaluates internally to: npm run test -- --coverage --watch
+dr test -- --coverage --watch</code></pre>
                 </section>
 
-                <section id="configuration">
+                <section id="supported-tools" class="docs-section">
+                    <h2>Supported Tools</h2>
+                    <p>Detection priority resolves starting with monorepo locks, specialized tool configs, down to standard manifest locks.</p>
+                    
+                    <div class="alert alert-tip">
+                        <strong>Detection Engine:</strong> Locking locks (like <code>pnpm-lock.yaml</code>) take absolute precedence over config descriptors (like <code>package.json</code>).
+                    </div>
+
+                    <table style="width: 100%; border-collapse: collapse; margin: 2rem 0; font-size: 0.95rem; text-align: left;">
+                        <thead>
+                            <tr style="border-bottom: 2px solid var(--border); color: var(--text-primary);">
+                                <th style="padding: 0.75rem 1rem;">Ecosystem</th>
+                                <th style="padding: 0.75rem 1rem;">Supported Engines (Priority Order)</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr style="border-bottom: 1px solid var(--border);">
+                                <td style="padding: 0.75rem 1rem; font-weight: 600;">Monorepos</td>
+                                <td style="padding: 0.75rem 1rem; font-family: var(--font-mono); font-size: 0.85rem;">nx → turbo → lerna</td>
+                            </tr>
+                            <tr style="border-bottom: 1px solid var(--border);">
+                                <td style="padding: 0.75rem 1rem; font-weight: 600;">Node.js</td>
+                                <td style="padding: 0.75rem 1rem; font-family: var(--font-mono); font-size: 0.85rem;">bun → pnpm → yarn → npm</td>
+                            </tr>
+                            <tr style="border-bottom: 1px solid var(--border);">
+                                <td style="padding: 0.75rem 1rem; font-weight: 600;">Python</td>
+                                <td style="padding: 0.75rem 1rem; font-family: var(--font-mono); font-size: 0.85rem;">uv → poetry → pipenv → pip</td>
+                            </tr>
+                            <tr style="border-bottom: 1px solid var(--border);">
+                                <td style="padding: 0.75rem 1rem; font-weight: 600;">Rust</td>
+                                <td style="padding: 0.75rem 1rem; font-family: var(--font-mono); font-size: 0.85rem;">cargo</td>
+                            </tr>
+                            <tr style="border-bottom: 1px solid var(--border);">
+                                <td style="padding: 0.75rem 1rem; font-weight: 600;">Go</td>
+                                <td style="padding: 0.75rem 1rem; font-family: var(--font-mono); font-size: 0.85rem;">task → go</td>
+                            </tr>
+                            <tr style="border-bottom: 1px solid var(--border);">
+                                <td style="padding: 0.75rem 1rem; font-weight: 600;">Generic</td>
+                                <td style="padding: 0.75rem 1rem; font-family: var(--font-mono); font-size: 0.85rem;">just → make</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </section>
+
+                <section id="configuration" class="docs-section">
                     <h2>Configuration</h2>
-                    <p>Global configuration is stored in <code>~/.config/devrunner/config.toml</code>.</p>
+                    <p>Global behavior parameters are read from <code>~/.config/devrunner/config.toml</code>, and local workspace overrides can be declared within a local <code>devrunner.toml</code> file.</p>
                     <pre><code class="language-toml"># ~/.config/devrunner/config.toml
-
-[config]
-# Automatically check for updates (default: true)
+max_levels = 5
 auto_update = true
+ignore_tools = ["npm"]
 
-# Skip detection for specific tools
-ignore_tools = ["make"]
+[update]
+enabled = true
+check_interval_hours = 2</code></pre>
+                </section>
 
-# Enable detailed logging
-verbose = false</code></pre>
+                <section id="ai-integration" class="docs-section">
+                    <h2>AI Integration</h2>
+                    <p>devrunner is highly optimized for AI Coding Assistants like Claude Code, Codex, and OpenCode. When executing commands within LLM sandboxes, replacing system-wide packages with <code>dr</code> saves context tokens by bypassing directory scans.</p>
+                    <p>Configure Claude Code natively by putting the following in your system <code>CLAUDE.md</code>:</p>
+                    <pre><code class="language-markdown">## devrunner
+Use `dr &lt;command&gt;` as the universal task operator. 
+Do NOT invoke toolsets like npm or poetry directly.</code></pre>
                 </section>
 
             </article>
 
-            <footer class="footer" style="border-top: none; margin-top: 2rem; padding: 2rem 0; text-align: left;">
-                <p>© 2025 devrunner. <a href="https://github.com/princepal9120/devrunner"
-                        style="text-decoration: underline;">Edit this page on GitHub</a>.</p>
+            <!-- Docs Footer -->
+            <footer class="footer" style="background: transparent; border-top: none; text-align: left; padding: 3rem 0 0;">
+                <p>© 2026 devrunner. Under AGPL-3.0. <a href="https://github.com/princepal9120/devrunner" target="_blank" style="text-decoration: underline;">View on GitHub</a></p>
             </footer>
         </main>
     </div>
 
     <script src="main.js"></script>
-    <script>
-        lucide.createIcons();
-
-        const commands = {
-            mac: 'curl -fsSL https://raw.githubusercontent.com/princepal9120/devrunner/main/install.sh | bash',
-            win: 'irm https://raw.githubusercontent.com/princepal9120/devrunner/main/install.ps1 | iex',
-            cargo: 'cargo install devrunner'
-        };
-
-        function switchTab(os, el) {
-            document.querySelectorAll('.install-tab').forEach(t => t.classList.remove('active'));
-            el.classList.add('active');
-            document.getElementById('cmd-text').innerText = commands[os];
-        }
-
-        function copyCode() {
-            navigator.clipboard.writeText(document.getElementById('cmd-text').innerText);
-            alert('Copied to clipboard!');
-        }
-    </script>
 </body>
 
 </html>

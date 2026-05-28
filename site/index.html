@@ -1,264 +1,334 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="en" data-theme="dark">
 
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <meta name="theme-color" content="#1E1E1E">
+    <meta name="theme-color" content="#000000">
     <link rel="icon" href="logo.svg" type="image/svg+xml">
-    <title>devrunner - Universal Task Runner</title>
-    <meta name="description" content="Universal task runner for modern development.">
-    <!-- Fonts: Inter & JetBrains Mono -->
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link
-        href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap"
-        rel="stylesheet">
+    <title>devrunner — One command. Any project. Zero configuration.</title>
+    <meta name="description" content="Universal task runner for modern developers. Automatically detects your stack and runs commands instantly with zero mental context switching.">
+    
     <link rel="stylesheet" href="style.css">
-    <script src="https://unpkg.com/lucide@latest"></script>
 </head>
 
 <body>
 
-    <!-- Navigation -->
-    <nav class="navbar">
-        <div style="display: flex; align-items: center; gap: 1rem;">
-            <!-- Logo -->
-            <a href="#" class="logo">
-                <img src="logo.svg" alt="Logo" width="32" height="32" style="border-radius: 6px;">
-                <span style="font-weight: 700; font-size: 1.2rem; letter-spacing: -0.02em;">devrunner</span>
-            </a>
-        </div>
+    <!-- Glowing Background Orbs -->
+    <div class="glow-bg">
+        <div class="glow-orb orb-1"></div>
+        <div class="glow-orb orb-2"></div>
+    </div>
 
-        <button class="mobile-menu-btn" onclick="toggleMobileMenu()" aria-label="Toggle Menu">
-            <i data-lucide="menu"></i>
-        </button>
-        <div class="nav-links">
-            <a href="docs.html" class="nav-link">Documentation</a>
-            <a href="https://github.com/princepal9120/devrunner" class="nav-link github">
-                <i data-lucide="github" width="18" height="18"></i> GitHub
+    <!-- Floating Glass Navigation -->
+    <div class="nav-container">
+        <nav class="navbar">
+            <a href="index.html" class="logo">
+                <div class="logo-symbol"></div>
+                <span style="letter-spacing: -0.04em;">devrunner</span>
             </a>
-        </div>
-    </nav>
+
+            <div class="nav-links">
+                <a href="docs.html" class="nav-link">Documentation</a>
+                <a href="https://github.com/princepal9120/devrunner" target="_blank" class="nav-link">GitHub</a>
+            </div>
+
+            <div class="nav-cta">
+                <!-- Theme Toggle -->
+                <button onclick="toggleTheme()" aria-label="Toggle Theme" style="background: transparent; border: none; cursor: pointer; color: var(--text-primary); display: flex; align-items: center;">
+                    <!-- Moon Icon (Dark Mode active) -->
+                    <svg class="moon-icon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="display: none;"><path d="M12 3a6 6 0 0 0 9 9 9 9 0 1 1-9-9Z"/></svg>
+                    <!-- Sun Icon (Light Mode active) -->
+                    <svg class="sun-icon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="display: none;"><circle cx="12" cy="12" r="4"/><path d="M12 2v2"/><path d="M12 20v2"/><path d="m4.93 4.93 1.41 1.41"/><path d="m17.66 17.66 1.41 1.41"/><path d="M2 12h2"/><path d="M20 12h2"/><path d="m6.34 17.66-1.41 1.41"/><path d="m19.07 4.93-1.41 1.41"/></svg>
+                </button>
+                <a href="docs.html" class="btn btn-secondary">
+                    Get Started
+                    <span class="btn-arrow">
+                        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14"/><path d="m12 5 7 7-7 7"/></svg>
+                    </span>
+                </a>
+            </div>
+        </nav>
+    </div>
 
     <!-- Hero Section -->
-    <header class="hero-section">
-        <div class="badge">
-            <i data-lucide="sparkles" width="14" height="14" style="margin-right:6px"></i>
-            New: v0.2.0 Release
+    <header class="hero container">
+        <div class="hero-badge">
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" style="color: var(--brand-accent)"><path d="m12 3-1.912 5.886L4.2 9.2l5.887 1.911L12 17l1.912-5.888L19.8 9.2l-5.887-1.913Z"/></svg>
+            v0.2.0 Release Available
         </div>
-        <h1 class="hero-title">Your development workflow,<br> <span style="font-weight: 700; color: var(--color-brand-hover);">Automated.</span></h1>
+        
+        <h1 class="hero-title">Your Dev Workflow,<br>Unified.</h1>
         <p class="hero-subtitle">
-            Stop remembering if it's <code>npm devrunner</code>, <code>cargo devrunner</code>, or <code>mvn exec</code>.
-            <strong>devrunner</strong> detects your project tools and runs the right commands instantly.
+            One command. Any project. Zero configuration. Stop memorizing ecosystem commands. <strong>devrunner</strong> detects your lockfiles and runs the right tool instantly.
         </p>
 
-        <div class="hero-cta">
-            <a href="docs.html" class="btn btn-primary">Get Started</a>
-            <a href="https://github.com/princepal9120/devrunner" class="btn btn-secondary">View Source</a>
+        <div class="hero-actions">
+            <a href="docs.html" class="btn btn-primary">
+                Install devrunner
+                <span class="btn-arrow">
+                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><path d="M5 12h14"/><path d="m12 5 7 7-7 7"/></svg>
+                </span>
+            </a>
+            <a href="https://github.com/princepal9120/devrunner" target="_blank" class="btn btn-secondary">
+                View Repository
+            </a>
         </div>
 
-        <!-- Terminal Preview -->
-        <div class="demo-terminal">
-            <div class="terminal-header">
-                <div class="dot red"></div>
-                <div class="dot yellow"></div>
-                <div class="dot green"></div>
-            </div>
-            <div class="terminal-body">
-                <div><span class="prompt">$</span><span class="cmd">cd my-react-project</span></div>
-                <div><span class="prompt">$</span><span class="cmd">devrunner start</span></div>
-                <div style="margin-top: 8px">
-                    <div class="output-success">✔ Detected Node.js (package.json)</div>
-                    <div class="output">ℹ Running: npm devrunner start</div>
-                </div>
-                <div style="margin-top: 12px; color: #E5E7EB">
-                    > react-scripts start<br>
-                    Starting the development server...<br>
-                    Compiled successfully!
+        <!-- Double-Bezel Interactive Terminal Simulator -->
+        <div class="nested-shell">
+            <div class="nested-core">
+                <div class="terminal">
+                    <div class="terminal-header">
+                        <div class="terminal-dots">
+                            <span class="terminal-dot dot-red"></span>
+                            <span class="terminal-dot dot-yellow"></span>
+                            <span class="terminal-dot dot-green"></span>
+                        </div>
+                        <div class="terminal-tabs">
+                            <span class="terminal-tab active" onclick="switchTerminalTab('npm', this)">Node.js</span>
+                            <span class="terminal-tab" onclick="switchTerminalTab('cargo', this)">Rust</span>
+                            <span class="terminal-tab" onclick="switchTerminalTab('python', this)">Python</span>
+                            <span class="terminal-tab" onclick="switchTerminalTab('go', this)">Go</span>
+                        </div>
+                        <div style="width: 50px;"></div>
+                    </div>
+                    <div class="terminal-body">
+                        <div class="command-line">
+                            <span class="prompt">$</span>
+                            <span class="cmd" id="terminal-cmd">dr dev</span>
+                            <span class="cursor"></span>
+                        </div>
+                        <div id="terminal-output">
+                            <!-- Populated dynamically via main.js -->
+                        </div>
+                    </div>
                 </div>
             </div>
         </div>
     </header>
 
-    <!-- Features -->
-    <section class="features-section">
-        <div class="container">
-            <div class="grid-3">
-                <div class="feature-card">
-                    <div class="feature-icon"><i data-lucide="cpu"></i></div>
-                    <h3>Smart Detection</h3>
-                    <p>Automatically identifies 20+ build tools including Node.js, Rust, Python, Go, and Java. No
-                        configuration needed.</p>
-                </div>
-                <div class="feature-card">
-                    <div class="feature-icon"><i data-lucide="zap"></i></div>
-                    <h3>Blazing Fast</h3>
-                    <p>Written in Rust with zero runtime overhead. Cold start times under 50ms, making it faster than
-                        native runners.</p>
-                </div>
-                <div class="feature-card">
-                    <div class="feature-icon"><i data-lucide="folder-tree"></i></div>
-                    <h3>Recursive Power</h3>
-                    <p>devrunner commands from any deep subdirectory. We traverse up to find the project root so you don't
-                        have to.</p>
-                </div>
-            </div>
+    <!-- Path Traversal Visualizer Section -->
+    <section class="section container">
+        <div class="section-header">
+            <span class="section-eyebrow">Interactive Demo</span>
+            <h2>Subdirectory Awareness</h2>
+            <p>devrunner walks up the directory tree automatically to find the project root and locate appropriate configurations.</p>
         </div>
-    </section>
-    <!-- Supported Ecosystems - New Section -->
-    <section class="ecosystem-section" style="padding: 6rem 0; border-bottom: 1px solid var(--color-border);">
-        <div class="container" style="text-align: center;">
-            <div class="badge"
-                style="background: var(--color-bg-alt); color: var(--color-text-secondary); border-color: var(--color-border);">
-                ecosystem
-            </div>
-            <h2 style="font-size: 2.25rem; margin-top: 1rem; margin-bottom: 1rem;">One runner for every stack.</h2>
-            <p style="font-size: 1.1rem; color: var(--color-text-secondary); max-width: 600px; margin: 0 auto 4rem;">
-                Whether you're writing simple scripts or managing complex monorepos, Devrunner adapts to your
-                environment.
-            </p>
 
-            <div class="marquee-wrapper">
-                <div class="marquee-content">
-                    <!-- Set 1 -->
-                    <div class="logo-card mini">
-                        <img src="https://cdn.jsdelivr.net/gh/devicons/devicon/icons/javascript/javascript-original.svg"
-                            alt="JS" width="32">
-                        <span>JavaScript</span>
+        <div class="nested-shell" style="max-width: 1000px; margin: 0 auto;">
+            <div class="nested-core" style="padding: 2rem;">
+                <div class="playground-area">
+                    <!-- Left: Interactive Folder Tree -->
+                    <div class="tree-explorer">
+                        <div style="font-size: 0.8rem; font-weight: 700; text-transform: uppercase; color: var(--text-muted); margin-bottom: 1rem; padding-left: 0.75rem;">Interactive Filesystem</div>
+                        
+                        <div class="tree-node" onclick="selectTreeNode('components', this)">
+                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M20 20a2 2 0 0 0 2-2V8a2 2 0 0 0-2-2h-7.9a2 2 0 0 1-1.69-.9L9.6 3.9A2 2 0 0 0 7.93 3H4a2 2 0 0 0-2 2v13a2 2 0 0 0 2 2Z"/></svg>
+                            my-project/src/components
+                        </div>
+                        <div class="tree-node file" style="opacity: 0.6;">
+                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M15 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7Z"/><path d="M14 2v4a2 2 0 0 0 2 2h4"/></svg>
+                            Button.tsx
+                        </div>
+                        
+                        <div style="height: 1rem;"></div>
+                        
+                        <div class="tree-node" onclick="selectTreeNode('cargo', this)">
+                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M20 20a2 2 0 0 0 2-2V8a2 2 0 0 0-2-2h-7.9a2 2 0 0 1-1.69-.9L9.6 3.9A2 2 0 0 0 7.93 3H4a2 2 0 0 0-2 2v13a2 2 0 0 0 2 2Z"/></svg>
+                            cargo-crate/
+                        </div>
+                        <div class="tree-node file" style="opacity: 0.6;">
+                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M15 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7Z"/><path d="M14 2v4a2 2 0 0 0 2 2h4"/></svg>
+                            Cargo.toml
+                        </div>
+                        
+                        <div style="height: 1rem;"></div>
+                        
+                        <div class="tree-node" onclick="selectTreeNode('conflict', this)">
+                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M20 20a2 2 0 0 0 2-2V8a2 2 0 0 0-2-2h-7.9a2 2 0 0 1-1.69-.9L9.6 3.9A2 2 0 0 0 7.93 3H4a2 2 0 0 0-2 2v13a2 2 0 0 0 2 2Z"/></svg>
+                            conflict-project/
+                        </div>
+                        <div class="tree-node file" style="opacity: 0.6;">
+                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M15 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7Z"/><path d="M14 2v4a2 2 0 0 0 2 2h4"/></svg>
+                            yarn.lock
+                        </div>
+                        <div class="tree-node file" style="opacity: 0.6;">
+                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M15 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7Z"/><path d="M14 2v4a2 2 0 0 0 2 2h4"/></svg>
+                            pnpm-lock.yaml
+                        </div>
                     </div>
-                    <div class="logo-card mini">
-                        <img src="https://cdn.jsdelivr.net/gh/devicons/devicon/icons/typescript/typescript-original.svg"
-                            alt="TS" width="32">
-                        <span>TypeScript</span>
-                    </div>
-                    <div class="logo-card mini">
-                        <img src="https://cdn.jsdelivr.net/gh/devicons/devicon/icons/python/python-original.svg"
-                            alt="Python" width="32">
-                        <span>Python</span>
-                    </div>
-                    <div class="logo-card mini">
-                        <img src="https://cdn.jsdelivr.net/gh/devicons/devicon/icons/rust/rust-original.svg" alt="Rust"
-                            width="32">
-                        <span>Rust</span>
-                    </div>
-                    <div class="logo-card mini">
-                        <img src="https://cdn.jsdelivr.net/gh/devicons/devicon/icons/go/go-original.svg" alt="Go"
-                            width="32">
-                        <span>Go</span>
-                    </div>
-                    <div class="logo-card mini">
-                        <img src="https://cdn.jsdelivr.net/gh/devicons/devicon/icons/java/java-original.svg" alt="Java"
-                            width="32">
-                        <span>Java</span>
-                    </div>
-                    <div class="logo-card mini">
-                        <img src="https://cdn.jsdelivr.net/gh/devicons/devicon/icons/php/php-original.svg" alt="PHP"
-                            width="32">
-                        <span>PHP</span>
-                    </div>
-                    <div class="logo-card mini">
-                        <img src="https://cdn.jsdelivr.net/gh/devicons/devicon/icons/ruby/ruby-original.svg" alt="Ruby"
-                            width="32">
-                        <span>Ruby</span>
-                    </div>
-                    <div class="logo-card mini">
-                        <img src="https://cdn.jsdelivr.net/gh/devicons/devicon/icons/csharp/csharp-original.svg"
-                            alt="C#" width="32">
-                        <span>.NET</span>
-                    </div>
-                    <div class="logo-card mini">
-                        <img src="https://cdn.jsdelivr.net/gh/devicons/devicon/icons/zig/zig-original.svg" alt="Zig"
-                            width="32">
-                        <span>Zig</span>
-                    </div>
-
-                    <!-- Set 2 (Duplicate for smooth scroll) -->
-                    <div class="logo-card mini">
-                        <img src="https://cdn.jsdelivr.net/gh/devicons/devicon/icons/javascript/javascript-original.svg"
-                            alt="JS" width="32">
-                        <span>JavaScript</span>
-                    </div>
-                    <div class="logo-card mini">
-                        <img src="https://cdn.jsdelivr.net/gh/devicons/devicon/icons/typescript/typescript-original.svg"
-                            alt="TS" width="32">
-                        <span>TypeScript</span>
-                    </div>
-                    <div class="logo-card mini">
-                        <img src="https://cdn.jsdelivr.net/gh/devicons/devicon/icons/python/python-original.svg"
-                            alt="Python" width="32">
-                        <span>Python</span>
-                    </div>
-                    <div class="logo-card mini">
-                        <img src="https://cdn.jsdelivr.net/gh/devicons/devicon/icons/rust/rust-original.svg" alt="Rust"
-                            width="32">
-                        <span>Rust</span>
-                    </div>
-                    <div class="logo-card mini">
-                        <img src="https://cdn.jsdelivr.net/gh/devicons/devicon/icons/go/go-original.svg" alt="Go"
-                            width="32">
-                        <span>Go</span>
-                    </div>
-                    <div class="logo-card mini">
-                        <img src="https://cdn.jsdelivr.net/gh/devicons/devicon/icons/java/java-original.svg" alt="Java"
-                            width="32">
-                        <span>Java</span>
-                    </div>
-                    <div class="logo-card mini">
-                        <img src="https://cdn.jsdelivr.net/gh/devicons/devicon/icons/php/php-original.svg" alt="PHP"
-                            width="32">
-                        <span>PHP</span>
-                    </div>
-                    <div class="logo-card mini">
-                        <img src="https://cdn.jsdelivr.net/gh/devicons/devicon/icons/ruby/ruby-original.svg" alt="Ruby"
-                            width="32">
-                        <span>Ruby</span>
-                    </div>
-                    <div class="logo-card mini">
-                        <img src="https://cdn.jsdelivr.net/gh/devicons/devicon/icons/csharp/csharp-original.svg"
-                            alt="C#" width="32">
-                        <span>.NET</span>
-                    </div>
-                    <div class="logo-card mini">
-                        <img src="https://cdn.jsdelivr.net/gh/devicons/devicon/icons/zig/zig-original.svg" alt="Zig"
-                            width="32">
-                        <span>Zig</span>
+                    <!-- Right: Dynamic Resolution Visualizer -->
+                    <div class="flow-visualizer">
+                        <div class="flow-step" id="step-traverse">
+                            <span class="flow-number">1</span>
+                            <div>
+                                <h4 style="font-size: 0.95rem; margin-bottom: 0.2rem;">Directory Traversal</h4>
+                                <span class="flow-desc" id="step-traverse-desc">Traversing up the directory structure...</span>
+                            </div>
+                        </div>
+                        <div class="flow-step" id="step-detect">
+                            <span class="flow-number">2</span>
+                            <div>
+                                <h4 style="font-size: 0.95rem; margin-bottom: 0.2rem;">Lockfile Detection</h4>
+                                <span class="flow-desc">Parsing manifests and project identifiers.</span>
+                            </div>
+                        </div>
+                        <div class="flow-step" id="step-resolve">
+                            <span class="flow-number">3</span>
+                            <div>
+                                <h4 style="font-size: 0.95rem; margin-bottom: 0.2rem;">Conflict Resolution</h4>
+                                <span class="flow-desc">Consolidated package overrides verified.</span>
+                            </div>
+                        </div>
+                        <div class="flow-step" id="step-run">
+                            <span class="flow-number">4</span>
+                            <div>
+                                <h4 style="font-size: 0.95rem; margin-bottom: 0.2rem;">Command Execution</h4>
+                                <span class="flow-desc" class="flow-text">Executing build command instantly.</span>
+                            </div>
+                        </div>
                     </div>
                 </div>
             </div>
         </div>
     </section>
 
-    <!-- Bottom CTA -->
-    <section class="cta-section"
-        style="padding: 6rem 0; text-align: center; background: radial-gradient(circle at center, #EEF2FF 0%, transparent 60%);">
-        <div class="container">
-            <h2 style="font-size: 2.5rem; margin-bottom: 1.5rem;">Ready to speed up your workflow?</h2>
-            <p
-                style="font-size: 1.2rem; color: var(--color-text-secondary); margin-bottom: 3rem; max-width: 500px; margin-left: auto; margin-right: auto;">
-                Install Devrunner today and never worry about which package manager to use again.
-            </p>
-            <div class="hero-cta">
-                <a href="docs.html" class="btn btn-primary" style="padding: 1rem 2rem; font-size: 1.1rem;">Install
-                    devrunner</a>
+    <!-- Bento Grid Section -->
+    <section class="section container">
+        <div class="section-header">
+            <span class="section-eyebrow">Key Features</span>
+            <h2>Smarter builds. Faster dev loops.</h2>
+        </div>
+
+        <div class="bento-grid">
+            <!-- Card 1: Asymmetric Large Column (8) -->
+            <div class="bento-card col-8">
+                <div>
+                    <div class="bento-icon">
+                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M12 2v20"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>
+                    </div>
+                    <h3 class="bento-title">Unified Multi-Language Ecosystems</h3>
+                    <p class="bento-desc">Automatically interfaces with Monorepos (Nx, Turbo), JavaScript (Bun, PNPM, NPM), Python (UV, Poetry, Pipenv), Rust (Cargo), Go, Java, Swift, PHP, Ruby, and generic tasks (Just, Make).</p>
+                </div>
+                
+                <div class="marquee-container">
+                    <div class="marquee-track">
+                        <!-- Set 1 -->
+                        <span class="ecosystem-pill"><img src="https://cdn.jsdelivr.net/gh/devicons/devicon/icons/javascript/javascript-original.svg" alt="JS" width="16"> JavaScript</span>
+                        <span class="ecosystem-pill"><img src="https://cdn.jsdelivr.net/gh/devicons/devicon/icons/typescript/typescript-original.svg" alt="TS" width="16"> TypeScript</span>
+                        <span class="ecosystem-pill"><img src="https://cdn.jsdelivr.net/gh/devicons/devicon/icons/rust/rust-original.svg" alt="Rust" width="16"> Rust</span>
+                        <span class="ecosystem-pill"><img src="https://cdn.jsdelivr.net/gh/devicons/devicon/icons/python/python-original.svg" alt="Python" width="16"> Python</span>
+                        <span class="ecosystem-pill"><img src="https://cdn.jsdelivr.net/gh/devicons/devicon/icons/go/go-original.svg" alt="Go" width="16"> Go</span>
+                        <span class="ecosystem-pill"><img src="https://cdn.jsdelivr.net/gh/devicons/devicon/icons/java/java-original.svg" alt="Java" width="16"> Java</span>
+                        
+                        <!-- Set 2 (Duplicate for continuous loop) -->
+                        <span class="ecosystem-pill"><img src="https://cdn.jsdelivr.net/gh/devicons/devicon/icons/javascript/javascript-original.svg" alt="JS" width="16"> JavaScript</span>
+                        <span class="ecosystem-pill"><img src="https://cdn.jsdelivr.net/gh/devicons/devicon/icons/typescript/typescript-original.svg" alt="TS" width="16"> TypeScript</span>
+                        <span class="ecosystem-pill"><img src="https://cdn.jsdelivr.net/gh/devicons/devicon/icons/rust/rust-original.svg" alt="Rust" width="16"> Rust</span>
+                        <span class="ecosystem-pill"><img src="https://cdn.jsdelivr.net/gh/devicons/devicon/icons/python/python-original.svg" alt="Python" width="16"> Python</span>
+                        <span class="ecosystem-pill"><img src="https://cdn.jsdelivr.net/gh/devicons/devicon/icons/go/go-original.svg" alt="Go" width="16"> Go</span>
+                        <span class="ecosystem-pill"><img src="https://cdn.jsdelivr.net/gh/devicons/devicon/icons/java/java-original.svg" alt="Java" width="16"> Java</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Card 2: Performance Comparison Column (4) -->
+            <div class="bento-card col-4">
+                <div>
+                    <div class="bento-icon">
+                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="m12 14 4-4"/><path d="M3.34 19a10 10 0 1 1 17.32 0Z"/></svg>
+                    </div>
+                    <h3 class="bento-title">Sub-5ms Execution Latency</h3>
+                    <p class="bento-desc">Engineered in high-performance Rust, offering near-instantaneous command resolutions with absolute zero runtime interpreter overhead.</p>
+                </div>
+                
+                <div class="perf-compare">
+                    <div class="perf-bar-wrapper">
+                        <div class="perf-label-row">
+                            <span>devrunner (dr)</span>
+                            <span style="color: var(--brand-accent)">4ms</span>
+                        </div>
+                        <div class="perf-bar-container">
+                            <div class="perf-bar dr" data-width="8%"></div>
+                        </div>
+                    </div>
+                    <div class="perf-bar-wrapper" style="opacity: 0.65;">
+                        <div class="perf-label-row">
+                            <span>npm run</span>
+                            <span>120ms</span>
+                        </div>
+                        <div class="perf-bar-container">
+                            <div class="perf-bar npm" data-width="70%"></div>
+                        </div>
+                    </div>
+                    <div class="perf-bar-wrapper" style="opacity: 0.5;">
+                        <div class="perf-label-row">
+                            <span>yarn run</span>
+                            <span>210ms</span>
+                        </div>
+                        <div class="perf-bar-container">
+                            <div class="perf-bar yarn" data-width="95%"></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Card 3: Monorepo Resolution (4) -->
+            <div class="bento-card col-4">
+                <div>
+                    <div class="bento-icon">
+                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M12 22c5.523 0 10-4.477 10-10S17.523 2 12 2 2 6.477 2 12s4.477 10 10 10Z"/><path d="M12 6v6l4 2"/></svg>
+                    </div>
+                    <h3 class="bento-title">Conflict Resolution</h3>
+                    <p class="bento-desc">When multiple lockfiles exist, devrunner automatically inspects system files and environment contexts to bypass conflicts gracefully.</p>
+                </div>
+            </div>
+
+            <!-- Card 4: AI Native Integration Column (8) -->
+            <div class="bento-card col-8">
+                <div>
+                    <div class="bento-icon">
+                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/><polyline points="3.27 6.96 12 12.01 20.73 6.96"/><line x1="12" y1="22.08" x2="12" y2="12"/></svg>
+                    </div>
+                    <h3 class="bento-title">AI Coding Assistants Integrated</h3>
+                    <p class="bento-desc">Installer natively configures Claude Code, Codex, and OpenCode terminal hooks. Minimizes token bills up to 90% by substituting verbose workspace sweeps with unified execution calls.</p>
+                </div>
+                
+                <div style="margin-top: 1.5rem; background: rgba(255,255,255,0.03); border: 1px solid var(--border); border-radius: 12px; padding: 1.25rem; font-family: var(--font-mono); font-size: 0.85rem; color: var(--text-primary);">
+                    <span style="color: #6366f1;">## devrunner integration</span><br>
+                    Use <span style="color: #27c93f;">dr &lt;command&gt;</span> as the universal execution driver. <br>
+                    Do NOT call npm, cargo, poetry directly inside LLM sessions.
+                </div>
             </div>
         </div>
     </section>
+
+    <!-- Bottom Call to Action Section (Vercel Style) -->
+    <section class="cta-section container">
+        <h2 style="font-weight: 800; font-size: clamp(2rem, 4vw, 3rem); line-height: 1.1; margin-bottom: 1.5rem;">Accelerate your development cycle.</h2>
+        <p style="font-size: 1.2rem; color: var(--text-secondary); max-width: 550px; margin: 0 auto 3rem;">
+            Install devrunner today and optimize command execution. Built for rapid, zero-overhead workflow automation.
+        </p>
+        <div style="display: flex; justify-content: center; gap: 1.25rem;">
+            <a href="docs.html" class="btn btn-primary">
+                Read Documentation
+            </a>
+            <a href="https://github.com/princepal9120/devrunner" target="_blank" class="btn btn-secondary">
+                Star on GitHub
+            </a>
+        </div>
+    </section>
+
+    <!-- Footer -->
     <footer class="footer">
-        <div class="container">
-            <p>© 2025 devrunner. All rights reserved.</p>
+        <div class="container footer-content">
+            <p>© 2026 devrunner. All rights reserved. Open source under AGPL-3.0.</p>
+            <p>Made with high engineering standards.</p>
         </div>
     </footer>
 
-    <script>
-        lucide.createIcons();
-
-        // Simple scroll effect for navbar border
-        window.addEventListener('scroll', () => {
-            if (window.scrollY > 10) document.body.classList.add('scrolled');
-            else document.body.classList.remove('scrolled');
-        });
-    </script>
+    <script src="main.js"></script>
 </body>
 
 </html>
