@@ -15,9 +15,11 @@ use run_cli::cli::{Cli, Commands};
 use run_cli::config::Config;
 use run_cli::detectors::{DetectedRunner, Ecosystem, UnknownValidator};
 use run_cli::error::exit_codes;
+use run_cli::install_hints;
 use run_cli::output;
 use run_cli::runner::{check_conflicts, execute, search_runners, select_runner};
 use run_cli::update;
+use run_cli::RunError;
 use std::env;
 use std::io;
 use std::process;
@@ -186,6 +188,9 @@ fn main() {
         Ok(r) => r,
         Err(e) => {
             output::error(&e.to_string());
+            if let RunError::ToolNotInstalled(_) = &e {
+                install_hints::print_install_hint(extract_tool_name(&e.to_string()));
+            }
             process::exit(e.exit_code());
         }
     };
@@ -210,6 +215,9 @@ fn main() {
         Ok(r) => r,
         Err(e) => {
             output::error(&e.to_string());
+            if let RunError::ToolNotInstalled(_) = &e {
+                install_hints::print_install_hint(extract_tool_name(&e.to_string()));
+            }
             process::exit(e.exit_code());
         }
     };
@@ -229,4 +237,29 @@ fn main() {
         .code()
         .unwrap_or(exit_codes::GENERIC_ERROR);
     process::exit(exit_code);
+}
+
+/// Extract the tool name from a `ToolNotInstalled` error message.
+///
+/// The error format produced by `runner.rs` is:
+///   "Tool not installed: <tool> is not installed. ..."
+/// or (from check_conflicts):
+///   "Tool not installed: None of the detected ... tools are installed: <tool1>, <tool2>..."
+///
+/// We extract the first word after "Tool not installed: " and strip trailing
+/// punctuation, giving us the bare tool name to look up in the hint registry.
+fn extract_tool_name(error_msg: &str) -> &str {
+    // Strip the "Tool not installed: " prefix (produced by RunError Display)
+    let payload = error_msg
+        .strip_prefix("Tool not installed: ")
+        .unwrap_or(error_msg);
+
+    // The first word of the payload is the tool name.
+    // e.g. "cargo is not installed..."  → "cargo"
+    // e.g. "None of the detected..."   → "None" (no hint, falls back to generic)
+    payload
+        .split_whitespace()
+        .next()
+        .unwrap_or("")
+        .trim_end_matches(['.', ',', ';', ':'])
 }

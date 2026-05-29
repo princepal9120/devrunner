@@ -21,6 +21,7 @@ pub mod config;
 pub mod detectors;
 pub mod error;
 pub mod http;
+pub mod install_hints;
 pub mod output;
 pub mod runner;
 pub mod update;
