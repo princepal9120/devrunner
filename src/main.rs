@@ -17,7 +17,7 @@ use run_cli::detectors::{DetectedRunner, Ecosystem, UnknownValidator};
 use run_cli::error::exit_codes;
 use run_cli::install_hints;
 use run_cli::output;
-use run_cli::runner::{check_conflicts, execute, search_runners, select_runner};
+use run_cli::runner::{check_conflicts, execute, search_runners, select_runner, ExecuteOptions};
 use run_cli::update;
 use run_cli::RunError;
 use std::env;
@@ -64,6 +64,12 @@ fn main() {
         };
     let mut ignore_list = config.ignore_tools.clone();
     ignore_list.extend(cli.ignore.clone());
+
+    // Build effective toolchain config (CLI flag can disable auto-install)
+    let mut toolchain = config.get_toolchain();
+    if cli.no_auto_install {
+        toolchain.auto_install = Some(false);
+    }
 
     // Check for update notification
     update::check_update_notification(quiet);
@@ -202,16 +208,16 @@ fn main() {
         }
     };
 
-    // Execute the command
-    let result = match execute(
-        &runner,
-        &command,
-        &cli.args,
-        &working_dir,
-        cli.dry_run,
+    // Build execute options
+    let opts = ExecuteOptions {
+        dry_run: cli.dry_run,
         verbose,
         quiet,
-    ) {
+        toolchain: &toolchain,
+    };
+
+    // Execute the command
+    let result = match execute(&runner, &command, &cli.args, &working_dir, &opts) {
         Ok(r) => r,
         Err(e) => {
             output::error(&e.to_string());

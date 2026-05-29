@@ -402,6 +402,9 @@ pub fn get_install_hint(tool: &str) -> Option<InstallHint> {
 
 /// Print a formatted install hint to stderr.
 /// Call this right after printing a `ToolNotInstalled` error.
+///
+/// If neither mise nor proto is installed, also suggests installing mise as a
+/// universal tool manager so future missing tools are handled automatically.
 pub fn print_install_hint(tool: &str) {
     if let Some(hint) = get_install_hint(tool) {
         hint.print();
@@ -412,6 +415,35 @@ pub fn print_install_hint(tool: &str) {
             "💡 Search online for how to install '{}', then re-run devrunner.",
             tool
         );
+    }
+
+    // If neither mise nor proto is installed, suggest mise as a one-time setup
+    // that makes ALL future missing tools auto-install transparently.
+    let has_mise = which::which("mise").is_ok();
+    let has_proto = which::which("proto").is_ok();
+
+    if !has_mise && !has_proto {
+        use owo_colors::OwoColorize;
+        let colors_off = crate::output::colors_disabled();
+
+        eprintln!();
+        if colors_off {
+            eprintln!("⚡ Zero-install tip: Install mise once and devrunner will auto-install");
+            eprintln!("   any missing tools for you — no more manual installs:");
+            eprintln!();
+            eprintln!("   curl https://mise.run | sh    # https://mise.jdx.dev");
+        } else {
+            eprintln!(
+                "{}  {} Install {} once and devrunner will auto-install",
+                "⚡".yellow(),
+                "Zero-install tip:".bold(),
+                "mise".cyan().bold()
+            );
+            eprintln!("   any missing tools for you automatically — no more manual installs:");
+            eprintln!();
+            eprintln!("   {}", "curl https://mise.run | sh".green());
+            eprintln!("   {}", "# https://mise.jdx.dev".dimmed());
+        }
     }
 }
 

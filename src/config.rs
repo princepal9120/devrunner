@@ -48,6 +48,66 @@ impl UpdateConfig {
     }
 }
 
+/// Which toolchain manager backend to use for auto-installing missing tools.
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize, Default)]
+#[serde(rename_all = "lowercase")]
+pub enum ToolchainBackend {
+    /// Try mise first, then proto, then give up (default)
+    #[default]
+    Auto,
+    /// Use mise (https://mise.jdx.dev)
+    Mise,
+    /// Use proto (https://moonrepo.dev/proto)
+    Proto,
+    /// Disable auto-install entirely
+    None,
+}
+
+impl ToolchainBackend {
+    /// Parse a backend name string into a ToolchainBackend variant.
+    pub fn parse_backend(s: &str) -> Self {
+        match s.to_lowercase().as_str() {
+            "mise" => ToolchainBackend::Mise,
+            "proto" => ToolchainBackend::Proto,
+            "none" | "off" | "disabled" => ToolchainBackend::None,
+            _ => ToolchainBackend::Auto,
+        }
+    }
+}
+
+/// Configuration for the toolchain auto-install feature.
+#[derive(Debug, Clone, Serialize, Deserialize, Default)]
+#[serde(default)]
+pub struct ToolchainConfig {
+    /// Automatically install missing tools via mise/proto (default: true)
+    pub auto_install: Option<bool>,
+    /// Which backend to use: "auto" | "mise" | "proto" | "none" (default: "auto")
+    pub backend: Option<String>,
+}
+
+impl ToolchainConfig {
+    /// Whether auto-install is enabled (default: true)
+    pub fn get_auto_install(&self) -> bool {
+        self.auto_install.unwrap_or(true)
+    }
+
+    /// The resolved backend enum
+    pub fn get_backend(&self) -> ToolchainBackend {
+        self.backend
+            .as_deref()
+            .map(ToolchainBackend::parse_backend)
+            .unwrap_or_default()
+    }
+
+    /// Merge two ToolchainConfig, with other taking precedence
+    pub fn merge(self, other: ToolchainConfig) -> Self {
+        ToolchainConfig {
+            auto_install: other.auto_install.or(self.auto_install),
+            backend: other.backend.or(self.backend),
+        }
+    }
+}
+
 /// Configuration structure for the devrunner CLI
 #[derive(Debug, Clone, Serialize, Deserialize, Default)]
 #[serde(default)]
@@ -64,6 +124,8 @@ pub struct Config {
     pub quiet: Option<bool>,
     /// Update configuration section
     pub update: Option<UpdateConfig>,
+    /// Toolchain auto-install configuration
+    pub toolchain: Option<ToolchainConfig>,
     /// Custom commands overrides
     pub commands: Option<HashMap<String, String>>,
 }
@@ -132,6 +194,12 @@ impl Config {
                 (Some(base), None) => Some(base),
                 (None, None) => None,
             },
+            toolchain: match (self.toolchain, other.toolchain) {
+                (Some(base), Some(over)) => Some(base.merge(over)),
+                (None, Some(over)) => Some(over),
+                (Some(base), None) => Some(base),
+                (None, None) => None,
+            },
             commands: match (self.commands, other.commands) {
                 (Some(mut base), Some(over)) => {
                     base.extend(over);
@@ -174,6 +242,11 @@ impl Config {
         self.quiet.unwrap_or(false)
     }
 
+    /// Get toolchain config, with defaults applied
+    pub fn get_toolchain(&self) -> ToolchainConfig {
+        self.toolchain.clone().unwrap_or_default()
+    }
+
     /// Ensure config directory exists
     pub fn ensure_config_dir() -> std::io::Result<PathBuf> {
         if let Some(config_dir) = dirs::config_dir() {
@@ -212,6 +285,7 @@ mod tests {
             verbose: None,
             quiet: None,
             update: None,
+            toolchain: None,
             commands: None,
         };
 
@@ -222,6 +296,7 @@ mod tests {
             verbose: Some(true),
             quiet: None,
             update: None,
+            toolchain: None,
             commands: None,
         };
 
@@ -366,5 +441,95 @@ enabled = false
         let config = Config::load_from_file(&config_path).unwrap();
         // [update].enabled should override legacy auto_update
         assert!(!config.get_auto_update());
+    }
+
+    #[test]
+    fn test_toolchain_defaults() {
+        let tc = ToolchainConfig::default();
+        assert!(tc.get_auto_install(), "auto_install should default to true");
+        assert_eq!(
+            tc.get_backend(),
+            ToolchainBackend::Auto,
+            "backend should default to Auto"
+        );
+    }
+
+    #[test]
+    fn test_toolchain_backend_parsing() {
+        let cases = [
+            ("mise", ToolchainBackend::Mise),
+            ("proto", ToolchainBackend::Proto),
+            ("none", ToolchainBackend::None),
+            ("off", ToolchainBackend::None),
+            ("disabled", ToolchainBackend::None),
+            ("auto", ToolchainBackend::Auto),
+            ("unknown", ToolchainBackend::Auto),
+            ("MISE", ToolchainBackend::Mise), // case insensitive
+        ];
+        for (input, expected) in &cases {
+            assert_eq!(
+                ToolchainBackend::parse_backend(input),
+                *expected,
+                "failed for input '{}'",
+                input
+            );
+        }
+    }
+
+    #[test]
+    fn test_toolchain_config_merge() {
+        let base = ToolchainConfig {
+            auto_install: Some(true),
+            backend: Some("mise".to_string()),
+        };
+        let over = ToolchainConfig {
+            auto_install: Some(false),
+            backend: None,
+        };
+        let merged = base.merge(over);
+        assert!(!merged.get_auto_install());
+        assert_eq!(merged.get_backend(), ToolchainBackend::Mise); // preserved from base
+    }
+
+    #[test]
+    fn test_load_config_with_toolchain_section() {
+        let dir = tempdir().unwrap();
+        let config_path = dir.path().join("config.toml");
+
+        fs::write(
+            &config_path,
+            r#"
+[toolchain]
+auto_install = false
+backend = "proto"
+"#,
+        )
+        .unwrap();
+
+        let config = Config::load_from_file(&config_path).unwrap();
+        let tc = config.get_toolchain();
+        assert!(!tc.get_auto_install());
+        assert_eq!(tc.get_backend(), ToolchainBackend::Proto);
+    }
+
+    #[test]
+    fn test_toolchain_disabled_in_config() {
+        let dir = tempdir().unwrap();
+        let config_path = dir.path().join("config.toml");
+
+        fs::write(
+            &config_path,
+            r#"
+[toolchain]
+auto_install = false
+backend = "none"
+"#,
+        )
+        .unwrap();
+
+        let config = Config::load_from_file(&config_path).unwrap();
+        let tc = config.get_toolchain();
+        assert!(!tc.get_auto_install());
+        assert_eq!(tc.get_backend(), ToolchainBackend::None);
     }
 }

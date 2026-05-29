@@ -66,6 +66,10 @@ pub struct Cli {
     #[arg(long = "dry-run", visible_alias = "dry-devrunner")]
     pub dry_run: bool,
 
+    /// Skip auto-installing missing tools via mise/proto for this run
+    #[arg(long = "no-auto-install")]
+    pub no_auto_install: bool,
+
     /// Force immediate update check
     #[arg(long)]
     pub update: bool,

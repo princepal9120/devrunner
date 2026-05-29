@@ -80,6 +80,7 @@ devrunner test --verbose         # Show detection details
 devrunner test --quiet           # Suppress output except errors
 devrunner test --levels=5        # Search up to 5 parent directories (default: 3)
 devrunner test --ignore=npm,yarn # Skip specific runners
+devrunner test --no-auto-install # Skip auto-install, show hint only
 devrunner --update               # Force update check
 ```
 
@@ -96,11 +97,46 @@ ignore_tools = ["npm"]
 [update]
 enabled = true              # Enable auto-update (default: true)
 check_interval_hours = 2    # Hours between update checks (default: 2)
+
+# Toolchain auto-install via mise/proto (optional)
+[toolchain]
+auto_install = true         # Auto-install missing tools (default: true)
+backend = "auto"            # "auto" | "mise" | "proto" | "none"
 ```
 
 Or `devrunner.toml` in your project for local overrides.
 
 **Precedence:** CLI args > local config > global config > defaults
+
+## Auto-Install Missing Tools
+
+When a project's tool is detected but not installed (e.g. `Cargo.toml` found but `cargo` missing), devrunner tries to auto-install it transparently via **[mise](https://mise.jdx.dev)** or **[proto](https://moonrepo.dev/proto)** before falling back to a manual install hint.
+
+```bash
+# User installs only devrunner + mise (once)
+curl https://mise.run | sh   # install mise
+
+# Then on any project, just:
+dr build   # ← devrunner auto-installs cargo/npm/etc. via mise if missing
+```
+
+The fallback chain is:
+1. **Tool installed** → use it directly (fast path)
+2. **Tool missing + mise available** → `mise exec -- <tool> <cmd>` (auto-installs)
+3. **Tool missing + proto available** → `proto run <tool> -- <cmd>` (auto-installs)
+4. **Nothing available** → show install hint + suggest installing mise
+
+Disable for a single run:
+```bash
+dr build --no-auto-install   # show hint only, don't delegate to mise/proto
+```
+
+Disable globally:
+```toml
+# ~/.config/devrunner/config.toml
+[toolchain]
+auto_install = false
+```
 
 ## Conflict Resolution
 
