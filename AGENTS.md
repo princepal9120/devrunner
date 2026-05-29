@@ -22,3 +22,6 @@
 
 - Title format: [<project_name>] <Title>
 - Always use `dr precommit` before committing.
+
+## Architecture Decision Records (ADR)
+- **Zero-Install Toolchains (2026-05-29)**: Instead of reinventing package managers or shipping bloated binaries, devrunner integrates with `mise` and `proto` via subprocess (`mise exec` / `proto run`). This provides automatic, zero-config tool provisioning with minimal overhead (5-10ms). The `[toolchain]` section in config controls this behavior.
