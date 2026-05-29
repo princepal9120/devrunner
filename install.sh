@@ -162,6 +162,20 @@ download_binary() {
     rm -rf "$tmp_dir"
 }
 
+# Install mise automatically for zero-install experience
+install_mise() {
+    if ! command -v mise &> /dev/null && [ ! -f "${HOME}/.local/bin/mise" ] && [ ! -f "${HOME}/.local/share/mise/bin/mise" ]; then
+        print_info "Installing mise for zero-config auto-provisioning..."
+        if curl -s https://mise.run | sh > /dev/null; then
+            print_success "mise installed successfully"
+        else
+            print_warning "Failed to install mise. You can install it manually later."
+        fi
+    else
+        print_info "mise is already installed"
+    fi
+}
+
 # Check if directory is in PATH
 check_path() {
     if [[ ":$PATH:" != *":${INSTALL_DIR}:"* ]]; then
@@ -208,6 +222,7 @@ main() {
     detect_platform
     get_latest_version
     download_binary
+    install_mise
     check_path
 
     echo ""

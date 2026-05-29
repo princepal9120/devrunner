@@ -98,6 +98,22 @@ function Install-devrunner {
         Copy-Item -Path $installPath -Destination $drPath -Force
         Write-Success "Created alias: $drPath"
 
+        # Install mise automatically for zero-install experience
+        $miseCommand = Get-Command "mise" -ErrorAction SilentlyContinue
+        $localMise = Join-Path $InstallDir "mise.exe"
+        if (-not $miseCommand -and -not (Test-Path $localMise)) {
+            Write-Info "Installing mise for zero-config auto-provisioning..."
+            $miseUrl = "https://github.com/jdx/mise/releases/latest/download/mise-latest-windows-$arch.exe"
+            try {
+                Invoke-WebRequest -Uri $miseUrl -OutFile $localMise -UseBasicParsing
+                Write-Success "mise installed successfully"
+            } catch {
+                Write-Warning "Failed to install mise. You can install it manually later."
+            }
+        } else {
+            Write-Info "mise is already installed"
+        }
+
         # Check if directory is in PATH
         $userPath = [Environment]::GetEnvironmentVariable("PATH", "User")
         if ($userPath -notlike "*$InstallDir*") {
