@@ -7,6 +7,14 @@ and this project follows [Semantic Versioning](https://semver.org/spec/v2.0.0.ht
 
 ## [Unreleased]
 
+## [0.7.0] - 2026-05-29
+
+### Added
+- **Zero-Install Toolchains**: Integrated with `mise` and `proto` to automatically provision missing package managers on-the-fly (`cargo`, `npm`, `poetry`, etc.).
+- Added `[toolchain]` section in `devrunner.toml` (and `config.toml`) to toggle auto-installation and specify the `mise` or `proto` backend.
+- Added `--no-auto-install` CLI flag to bypass auto-installation for a single command.
+- macOS/Linux and Windows install scripts now automatically install `mise` by default if it is not present on the system.
+
 ## [0.6.2] - 2026-05-27
 
 ### Fixed
