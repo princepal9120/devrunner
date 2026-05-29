@@ -22,10 +22,12 @@
 
     <!-- Floating Glass Navigation -->
     <div class="nav-container">
-        <nav class="navbar" style="max-width: 1200px;">
+        <nav class="navbar">
             <a href="index.html" class="logo">
-                <div class="logo-symbol"></div>
-                <span style="letter-spacing: -0.04em;">devrunner</span>
+                <svg width="24" height="24" viewBox="0 0 40 40" fill="none" xmlns="http://www.w3.org/2000/svg" style="color: var(--text-primary);">
+                    <path d="M20 4L37 34H26L20 22L14 34H3L20 4Z" fill="currentColor"/>
+                </svg>
+                <span style="letter-spacing: -0.05em; font-weight: 800;">devrunner</span>
             </a>
 
             <div class="nav-links">
@@ -38,7 +40,7 @@
                     <svg class="moon-icon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="display: none;"><path d="M12 3a6 6 0 0 0 9 9 9 9 0 1 1-9-9Z"/></svg>
                     <svg class="sun-icon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="display: none;"><circle cx="12" cy="12" r="4"/><path d="M12 2v2"/><path d="M12 20v2"/><path d="m4.93 4.93 1.41 1.41"/><path d="m17.66 17.66 1.41 1.41"/><path d="M2 12h2"/><path d="M20 12h2"/><path d="m6.34 17.66-1.41 1.41"/><path d="m19.07 4.93-1.41 1.41"/></svg>
                 </button>
-                <button class="mobile-menu-btn" onclick="toggleMobileMenu()" aria-label="Toggle Sidebar" style="background: transparent; border: none; cursor: pointer; color: var(--text-primary); margin-right: 0.5rem;">
+                <button class="mobile-menu-btn" onclick="toggleMobileMenu()" aria-label="Toggle Sidebar" style="background: transparent; border: none; cursor: pointer; color: var(--text-primary); margin-right: 0.5rem; display: none;">
                     <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="4" x2="20" y1="12" y2="12"/><line x1="4" x2="20" y1="6" y2="6"/><line x1="4" x2="20" y1="18" y2="18"/></svg>
                 </button>
                 <a href="https://github.com/princepal9120/devrunner" target="_blank" class="btn btn-secondary">
@@ -78,8 +80,8 @@
             <article class="docs-article">
                 
                 <header class="docs-header">
-                    <span style="font-size: 0.8rem; font-weight: 700; color: var(--brand-accent); text-transform: uppercase; letter-spacing: 0.1em;">Documentation</span>
-                    <h1 style="margin-top: 0.5rem;">Universal Task Resolution</h1>
+                    <span style="font-size: 0.8rem; font-weight: 600; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.1em;">Documentation</span>
+                    <h1>Universal Task Resolution</h1>
                     <p class="docs-subtitle">Learn how to set up, execute, and extend devrunner in your development workflows.</p>
                 </header>
 
@@ -111,7 +113,7 @@ dr build</code></pre>
                         <div class="install-payload">
                             <span id="install-cmd-payload">curl -fsSL install.cat/princepal9120/devrunner | bash</span>
                             <div class="install-copy-btn" onclick="copyDocsCommand()" aria-label="Copy to Clipboard">
-                                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect width="14" height="14" x="8" y="8" rx="2" ry="2"/><path d="M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2"/></svg>
+                                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect width="14" height="14" x="8" y="8" rx="2" ry="2"/><path d="M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2"/></svg>
                             </div>
                         </div>
                     </div>
@@ -143,37 +145,37 @@ dr test -- --coverage --watch</code></pre>
                         <strong>Detection Engine:</strong> Locking locks (like <code>pnpm-lock.yaml</code>) take absolute precedence over config descriptors (like <code>package.json</code>).
                     </div>
 
-                    <table style="width: 100%; border-collapse: collapse; margin: 2rem 0; font-size: 0.95rem; text-align: left;">
+                    <table style="width: 100%; border-collapse: collapse; margin: 2rem 0; font-size: 0.9rem; text-align: left;">
                         <thead>
-                            <tr style="border-bottom: 2px solid var(--border); color: var(--text-primary);">
-                                <th style="padding: 0.75rem 1rem;">Ecosystem</th>
-                                <th style="padding: 0.75rem 1rem;">Supported Engines (Priority Order)</th>
+                            <tr style="border-bottom: 1px solid var(--border); color: var(--text-primary);">
+                                <th style="padding: 0.75rem 1rem; font-weight: 600;">Ecosystem</th>
+                                <th style="padding: 0.75rem 1rem; font-weight: 600;">Supported Engines (Priority Order)</th>
                             </tr>
                         </thead>
                         <tbody>
                             <tr style="border-bottom: 1px solid var(--border);">
-                                <td style="padding: 0.75rem 1rem; font-weight: 600;">Monorepos</td>
-                                <td style="padding: 0.75rem 1rem; font-family: var(--font-mono); font-size: 0.85rem;">nx → turbo → lerna</td>
+                                <td style="padding: 0.75rem 1rem; font-weight: 500; color: var(--text-primary);">Monorepos</td>
+                                <td style="padding: 0.75rem 1rem; font-family: var(--font-mono); font-size: 0.8rem;">nx → turbo → lerna</td>
                             </tr>
                             <tr style="border-bottom: 1px solid var(--border);">
-                                <td style="padding: 0.75rem 1rem; font-weight: 600;">Node.js</td>
-                                <td style="padding: 0.75rem 1rem; font-family: var(--font-mono); font-size: 0.85rem;">bun → pnpm → yarn → npm</td>
+                                <td style="padding: 0.75rem 1rem; font-weight: 500; color: var(--text-primary);">Node.js</td>
+                                <td style="padding: 0.75rem 1rem; font-family: var(--font-mono); font-size: 0.8rem;">bun → pnpm → yarn → npm</td>
                             </tr>
                             <tr style="border-bottom: 1px solid var(--border);">
-                                <td style="padding: 0.75rem 1rem; font-weight: 600;">Python</td>
-                                <td style="padding: 0.75rem 1rem; font-family: var(--font-mono); font-size: 0.85rem;">uv → poetry → pipenv → pip</td>
+                                <td style="padding: 0.75rem 1rem; font-weight: 500; color: var(--text-primary);">Python</td>
+                                <td style="padding: 0.75rem 1rem; font-family: var(--font-mono); font-size: 0.8rem;">uv → poetry → pipenv → pip</td>
                             </tr>
                             <tr style="border-bottom: 1px solid var(--border);">
-                                <td style="padding: 0.75rem 1rem; font-weight: 600;">Rust</td>
-                                <td style="padding: 0.75rem 1rem; font-family: var(--font-mono); font-size: 0.85rem;">cargo</td>
+                                <td style="padding: 0.75rem 1rem; font-weight: 500; color: var(--text-primary);">Rust</td>
+                                <td style="padding: 0.75rem 1rem; font-family: var(--font-mono); font-size: 0.8rem;">cargo</td>
                             </tr>
                             <tr style="border-bottom: 1px solid var(--border);">
-                                <td style="padding: 0.75rem 1rem; font-weight: 600;">Go</td>
-                                <td style="padding: 0.75rem 1rem; font-family: var(--font-mono); font-size: 0.85rem;">task → go</td>
+                                <td style="padding: 0.75rem 1rem; font-weight: 500; color: var(--text-primary);">Go</td>
+                                <td style="padding: 0.75rem 1rem; font-family: var(--font-mono); font-size: 0.8rem;">task → go</td>
                             </tr>
                             <tr style="border-bottom: 1px solid var(--border);">
-                                <td style="padding: 0.75rem 1rem; font-weight: 600;">Generic</td>
-                                <td style="padding: 0.75rem 1rem; font-family: var(--font-mono); font-size: 0.85rem;">just → make</td>
+                                <td style="padding: 0.75rem 1rem; font-weight: 500; color: var(--text-primary);">Generic</td>
+                                <td style="padding: 0.75rem 1rem; font-family: var(--font-mono); font-size: 0.8rem;">just → make</td>
                             </tr>
                         </tbody>
                     </table>
@@ -204,7 +206,7 @@ Do NOT invoke toolsets like npm or poetry directly.</code></pre>
             </article>
 
             <!-- Docs Footer -->
-            <footer class="footer" style="background: transparent; border-top: none; text-align: left; padding: 3rem 0 0;">
+            <footer class="footer" style="background: transparent; border-top: none; text-align: left; padding: 4rem 0 0;">
                 <p>© 2026 devrunner. Under AGPL-3.0. <a href="https://github.com/princepal9120/devrunner" target="_blank" style="text-decoration: underline;">View on GitHub</a></p>
             </footer>
         </main>
