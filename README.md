@@ -17,11 +17,12 @@ That's it. Whether your project uses npm, yarn, pnpm, bun, cargo, poetry, gradle
 
 ## Why?
 
-Every project has its own package manager. Every time you switch projects, you ask yourself:
+Modern development involves constantly context-switching between different ecosystems.
 
-> "Was this npm or yarn? pnpm? Does it have a Makefile?"
+1. **"What command do I run?"** Is this project using `npm`, `yarn`, `pnpm`, `cargo`, `poetry`, or `make`? `devrunner` eliminates this friction. Just type `dr build` and it works.
+2. **"I don't have that tool installed."** Thanks to our **Zero-Install Architecture**, if you clone a project and don't have `cargo` or `npm` installed, `devrunner` will seamlessly proxy to `mise` or `proto` to silently provision the correct toolchain in the background.
 
-**devrunner** eliminates this friction. Just type `devrunner <command>` and it works.
+**One command. No manual tool installations.**
 
 ## Install
 
